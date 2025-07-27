@@ -9,14 +9,12 @@ repo_url: https://github.com/harrison-gaviria/pyvalidx
 theme:
   name: material
   palette:
-  # Palette toggle for dark mode
     - scheme: slate
       primary: blue grey
       accent: blue grey
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-    # Palette toggle for light mode
     - scheme: default
       primary: blue grey
       accent: blue grey
@@ -29,10 +27,13 @@ theme:
     - navigation.expand
     - navigation.path
     - navigation.top
+    - navigation.footer
     - search.highlight
     - search.share
     - content.code.copy
     - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
 
 plugins:
   - search
@@ -84,3 +85,11 @@ nav:
     - User Registration: examples/user-registration.md
     - Form Validation: examples/form-validation.md
     - API Validation: examples/api-validation.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/harrison-alonso-arroyave-gaviria-4ba07b358
+      name: Harrison Alonso Arroyave Gaviria
+
+copyright: '&copy; 2025 Harrison Alonso Arroyave Gaviria.'
