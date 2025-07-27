@@ -9,13 +9,29 @@ description = "Custom field validation"
 authors = [
     { name = "Harrison Alonso Arroyave Gaviria", email = "harrisonarroyaveg@gmail.com" }
 ]
+maintainers = [
+    { name = "Harrison Alonso Arroyave Gaviria", email = "harrisonarroyaveg@gmail.com" }
+]
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
+keywords = ["validation", "pydantic", "forms", "data-validation", "python"]
+
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent"
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
 ]
 
 dependencies = [
@@ -24,7 +40,15 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/harrison-gaviria/pyvalidx"
-Issues = "https://github.com/harrison-gaviria/pyvalidx/issues"
+Documentation = "https://harrison-gaviria.github.io/pyvalidx/"
+Repository = "https://github.com/harrison-gaviria/pyvalidx"
+"Bug Tracker" = "https://github.com/harrison-gaviria/pyvalidx/issues"
+Changelog = "https://github.com/harrison-gaviria/pyvalidx/blob/main/CHANGELOG.md"
+Funding = "https://github.com/sponsors/harrison-gaviria"
+Source = "https://github.com/harrison-gaviria/pyvalidx"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+pyvalidx = ["py.typed"]

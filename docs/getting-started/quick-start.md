@@ -76,7 +76,7 @@ class Product(ValidatedModel):
     )
 
 try:
-    Product(name='', price=None)
+    Product(name='')
 except ValidationException as e:
     print(e.to_dict())
     # Custom messages will be shown
@@ -92,8 +92,9 @@ from pyvalidx.core import required_if
 class Order(ValidatedModel):
     payment_method: str = field_validated(is_required())
     credit_card_number: str = field_validated(
-        required_if('payment_method', 'credit_card', 
-                   'Credit card number required for card payments')
+        required_if('payment_method', 'credit_card',
+                   'Credit card number required for card payments'),
+        default=''
     )
 
 # Valid - no card payment

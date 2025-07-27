@@ -1,5 +1,10 @@
 # PyValidX
 
+[![PyPI version](https://badge.fury.io/py/pyvalidx.svg)](https://badge.fury.io/py/pyvalidx)
+[![Python versions](https://img.shields.io/pypi/pyversions/pyvalidx.svg)](https://pypi.org/project/pyvalidx/)
+[![Downloads](https://pepy.tech/badge/pyvalidx/month)](https://pepy.tech/project/pyvalidx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Custom field validation for Python with Pydantic**
 
 PyValidX is a powerful and flexible validation library built on top of Pydantic that provides a rich set of validators for common use cases while allowing you to create custom validation logic with ease.

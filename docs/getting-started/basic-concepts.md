@@ -18,12 +18,12 @@ length_validator = min_length(5)
 email_validator = is_email()
 
 # Test validators
-print(required_validator('hello'))      # True
-print(required_validator(''))           # False
-print(length_validator('hello'))        # True
-print(length_validator('hi'))           # False
-print(email_validator('test@test.com')) # True
-print(email_validator('invalid'))       # False
+print(required_validator('hello', None))      # True
+print(required_validator('', None))           # False
+print(length_validator('hello', None))        # True
+print(length_validator('hi', None))           # False
+print(email_validator('test@test.com', None)) # True
+print(email_validator('invalid', None))       # False
 ```
 
 ### Validator Properties
@@ -183,7 +183,7 @@ user = User(name='John', nickname=None)
 
 # This fails - name is required
 try:
-    user = User(name=None)
+    user = User()
 except ValidationException as e:
     print(e.validations)  # {'name': 'This field is required'}
 ```
