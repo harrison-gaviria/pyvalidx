@@ -105,10 +105,10 @@ A custom exception that provides structured error information when validation fa
 
 ## 🔗 Quick Links
 
-- [Getting Started](getting-started/installation.md) - Install and set up PyValidX
-- [Validators](validators/core.md) - Explore all available validators
-- [Examples](examples/README.md) - Real-world usage examples
-- [API Reference](api-reference/validated-model.md) - Complete API documentation
+- [Getting Started](https://harrison-gaviria.github.io/pyvalidx/getting-started/installation/) - Install and set up PyValidX
+- [Validators](https://harrison-gaviria.github.io/pyvalidx/validators/core/) - Explore all available validators
+- [Examples](https://harrison-gaviria.github.io/pyvalidx/examples/) - Real-world usage examples
+- [API Reference](https://harrison-gaviria.github.io/pyvalidx/api-reference/validated-model/) - Complete API documentation
 
 ## 🤝 Contributing
 
