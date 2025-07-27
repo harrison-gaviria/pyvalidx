@@ -80,11 +80,6 @@ nav:
     - ValidatedModel: api-reference/validated-model.md
     - field_validated: api-reference/field-validated.md
     - ValidationException: api-reference/validation-exception.md
-  - Examples:
-    - Overview: examples/README.md
-    - User Registration: examples/user-registration.md
-    - Form Validation: examples/form-validation.md
-    - API Validation: examples/api-validation.md
 
 extra:
   social:

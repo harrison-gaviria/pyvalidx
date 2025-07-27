@@ -6,7 +6,7 @@ PyValidX is a powerful and flexible validation library built on top of Pydantic 
 
 ## ✨ Features
 
-- **🎯 Easy to Use**: Simple decorator-style validation with clear, readable syntax
+- **🎯 Easy to Use**: Simple validation with clear, readable syntax
 - **🔧 Flexible**: Support for custom validators and conditional validation
 - **📝 Type Safe**: Built on Pydantic with full type annotation support
 - **🌍 Comprehensive**: Wide range of built-in validators for strings, numbers, dates, and more
@@ -107,7 +107,6 @@ A custom exception that provides structured error information when validation fa
 
 - [Getting Started](https://harrison-gaviria.github.io/pyvalidx/getting-started/installation/) - Install and set up PyValidX
 - [Validators](https://harrison-gaviria.github.io/pyvalidx/validators/core/) - Explore all available validators
-- [Examples](https://harrison-gaviria.github.io/pyvalidx/examples/) - Real-world usage examples
 - [API Reference](https://harrison-gaviria.github.io/pyvalidx/api-reference/validated-model/) - Complete API documentation
 
 ## 🤝 Contributing

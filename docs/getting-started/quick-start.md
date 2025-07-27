@@ -161,4 +161,3 @@ Now that you've seen the basics, explore more advanced features:
 - [Basic Concepts](basic-concepts.md) - Understand PyValidX architecture
 - [All Validators](../validators/core.md) - Complete validator reference
 - [Custom Validators](../advanced/custom-validators.md) - Create your own validators
-- [Real Examples](../examples/user-registration.md) - Production-ready examples
