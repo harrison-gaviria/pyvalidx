@@ -3,7 +3,7 @@ Model for validation
 '''
 
 from pydantic import BaseModel, ConfigDict
-from exception import ValidationException
+from .exception import ValidationException
 from collections.abc import Callable
 from typing import Any, Dict, List, Union, Optional
 
