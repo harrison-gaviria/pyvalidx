@@ -17,31 +17,20 @@ class User(ValidatedModel):
     age: int = field_validated(is_required())
 
 # Create a valid user
-user = User(name="Alice", email="alice@example.com", age=30)
-print(f"Created user: {user.name}")
-```
+user = User(
+    name='John Doe',
+    email='john@example.com',
+    age=25
+)
+print(f'Created user: {user.name}')
 
-## Handling Validation Errors
-
-When validation fails, PyValidX raises a `ValidationException`:
-
-```python
-from pyvalidx.exception import ValidationException
-
+# Try to create an invalid user
 try:
-    # This will fail validation
-    invalid_user = User(name="", email="invalid-email", age=30)
+    invalid_user = User(name='', email='invalid-email', age=25)
 except ValidationException as e:
-    print("Validation errors:")
-    print(e.to_json())
-    # Output:
-    # {
-    #   "status_code": 400,
-    #   "validations": {
-    #     "name": "This field is required",
-    #     "email": "Invalid email format"
-    #   }
-    # }
+    print('Validation failed:')
+    for field, error in e.validations.items():
+        print(f'- {field}: {error}')
 ```
 
 ## Multiple Validators on One Field
@@ -66,8 +55,8 @@ class SecureUser(ValidatedModel):
 
 # This will validate all conditions
 secure_user = SecureUser(
-    username="alice123",
-    password="MySecurePass123!"
+    username='alice123',
+    password='MySecurePass123!'
 )
 ```
 
@@ -80,14 +69,14 @@ from pyvalidx.core import is_required
 
 class Product(ValidatedModel):
     name: str = field_validated(
-        is_required("Product name is required")
+        is_required('Product name is required')
     )
     price: float = field_validated(
-        is_required("Price must be specified")
+        is_required('Price must be specified')
     )
 
 try:
-    Product(name="", price=None)
+    Product(name='', price=None)
 except ValidationException as e:
     print(e.to_dict())
     # Custom messages will be shown
@@ -103,24 +92,24 @@ from pyvalidx.core import required_if
 class Order(ValidatedModel):
     payment_method: str = field_validated(is_required())
     credit_card_number: str = field_validated(
-        required_if("payment_method", "credit_card", 
-                   "Credit card number required for card payments")
+        required_if('payment_method', 'credit_card', 
+                   'Credit card number required for card payments')
     )
 
 # Valid - no card payment
-order1 = Order(payment_method="cash")
+order1 = Order(payment_method='cash')
 
 # Valid - card payment with number
 order2 = Order(
-    payment_method="credit_card",
-    credit_card_number="4111111111111111"
+    payment_method='credit_card',
+    credit_card_number='4111111111111111'
 )
 
 # Invalid - card payment without number
 try:
-    Order(payment_method="credit_card")
+    Order(payment_method='credit_card')
 except ValidationException as e:
-    print("Card number required!")
+    print('Card number required!')
 ```
 
 ## Working with Dates
@@ -134,12 +123,12 @@ class Event(ValidatedModel):
     name: str = field_validated(is_required())
     start_date: str = field_validated(
         is_required(),
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d", "Event must be in the future")
+        is_date('%Y-%m-%d'),
+        is_future_date('%Y-%m-%d', 'Event must be in the future')
     )
 
 # Valid future event
-event = Event(name="Conference", start_date="2025-12-01")
+event = Event(name='Conference', start_date='2025-12-01')
 ```
 
 ## Numeric Validation
@@ -153,16 +142,16 @@ class Product(ValidatedModel):
     name: str = field_validated(is_required())
     price: float = field_validated(
         is_required(),
-        is_positive("Price must be positive"),
-        min_value(0.01, "Minimum price is $0.01")
+        is_positive('Price must be positive'),
+        min_value(0.01, 'Minimum price is $0.01')
     )
     quantity: int = field_validated(
         is_required(),
         min_value(1),
-        max_value(1000, "Maximum quantity is 1000")
+        max_value(1000, 'Maximum quantity is 1000')
     )
 
-product = Product(name="Widget", price=19.99, quantity=5)
+product = Product(name='Widget', price=19.99, quantity=5)
 ```
 
 ## What's Next?

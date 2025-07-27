@@ -27,7 +27,7 @@ If you want to contribute to PyValidX or need the latest development version:
 
 ```bash
 # Clone the repository
-git clone https://github.com/harrsion-gaviria/pyvalidx.git
+git clone https://github.com/harrison-gaviria/pyvalidx.git
 cd pyvalidx
 
 # Install in development mode
@@ -49,8 +49,8 @@ class TestModel(ValidatedModel):
     name: str = field_validated(is_required())
 
 # This should work without errors
-test = TestModel(name="PyValidX")
-print(f"Installation successful! Created model with name: {test.name}")
+test = TestModel(name='PyValidX')
+print(f'Installation successful! Created model with name: {test.name}')
 ```
 
 If you see the success message, PyValidX is installed and ready to use!

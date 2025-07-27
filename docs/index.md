@@ -30,14 +30,14 @@ class User(ValidatedModel):
 # This will validate automatically
 try:
     user = User(
-        name="John Doe",
-        email="john@example.com", 
-        password="SecurePass123!",
+        name='John Doe',
+        email='john@example.com', 
+        password='SecurePass123!',
         age=25
     )
-    print("User created successfully!")
+    print('User created successfully!')
 except ValidationException as e:
-    print(f"Validation failed: {e.to_dict()}")
+    print(f'Validation failed: {e.to_dict()}')
 ```
 
 ## 📦 Installation
@@ -107,7 +107,7 @@ A custom exception that provides structured error information when validation fa
 
 - [Getting Started](getting-started/installation.md) - Install and set up PyValidX
 - [Validators](validators/core.md) - Explore all available validators
-- [Examples](examples/user-registration.md) - Real-world usage examples
+- [Examples](examples/README.md) - Real-world usage examples
 - [API Reference](api-reference/validated-model.md) - Complete API documentation
 
 ## 🤝 Contributing
@@ -116,10 +116,10 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/harrsion-gaviria/pyvalidx/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/harrison-gaviria/pyvalidx/blob/main/LICENSE) file for details.
 
 ## 👤 Author
 
 **Harrison Alonso Arroyave Gaviria**
-- GitHub: [@harrsion-gaviria](https://github.com/harrsion-gaviria)
+- GitHub: [@harrison-gaviria](https://github.com/harrison-gaviria)
 - Email: harrisonarroyaveg@gmail.com

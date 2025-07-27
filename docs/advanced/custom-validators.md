@@ -1,22 +1,31 @@
 # Custom Validators
 
-PyValidX permite crear validadores personalizados para casos de uso específicos que no están cubiertos por los validadores predefinidos.
+PyValidX allows creating custom validators for specific use cases that are not covered by predefined validators.
 
-## Creando Validadores Personalizados
+## Creating Custom Validators
 
-### Función Básica de Validación
+### Basic Validation Function
 
-Un validador personalizado es una función que:
-- Recibe dos parámetros: `value` y `context` (opcional)
-- Retorna `True` si la validación es exitosa, `False` si falla
-- Tiene un atributo `__message__` con el mensaje de error
+A custom validator is a function that:
+- Receives two parameters: `value` and `context` (optional)
+- Returns `True` if validation is successful, `False` if it fails
+- Has a `__message__` attribute with the error message
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
 from pyvalidx.core import custom
 
-def is_even(value, context=None):
-    """Valida que el número sea par"""
+def is_even(value, context=None) -> bool:
+    '''
+    Validates that the number is even
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
     try:
@@ -24,13 +33,17 @@ def is_even(value, context=None):
     except (ValueError, TypeError):
         return False
 
+# Add error message
+is_even.__message__ = 'Number must be even'
+
 class NumberModel(ValidatedModel):
     even_number: int = field_validated(
-        custom(is_even, "Number must be even")
+        custom(is_even, 'Number must be even')
     )
 
-# Uso
-number = NumberModel(even_number=4)  # Válido
+# Usage
+valid_model = NumberModel(even_number=4)  # Valid
+# invalid_model = NumberModel(even_number=3)  # Raises ValidationException
 ```
 
 ### Validador como Función Factory
@@ -38,65 +51,83 @@ number = NumberModel(even_number=4)  # Válido
 Para validadores más flexibles, crea una función que retorne el validador:
 
 ```python
-def min_words(word_count: int, message: str = None):
-    """Factory para validar cantidad mínima de palabras"""
-    message = message or f"Must contain at least {word_count} words"
-    
+def min_words(word_count: int, message: str = None) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Factory para validar cantidad mínima de palabras
+
+    Args:
+        word_count (int): Minimum number of words
+        message (str, optional): Error message if validation fails
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Validator function
+    '''
+    message = message or f'Must contain at least {word_count} words'
+
     def validator(value, context=None):
         if value is None:
             return True
         word_list = str(value).strip().split()
         return len(word_list) >= word_count
-    
+
     validator.__message__ = message
     return validator
 
 class ArticleModel(ValidatedModel):
-    title: str = field_validated(min_words(2, "Title must have at least 2 words"))
-    content: str = field_validated(min_words(10, "Content must have at least 10 words"))
+    title: str = field_validated(min_words(2, 'Title must have at least 2 words'))
+    content: str = field_validated(min_words(10, 'Content must have at least 10 words'))
 
 # Uso
 article = ArticleModel(
-    title="Python Validation Guide",
-    content="This is a comprehensive guide about creating custom validators in Python..."
+    title='Python Validation Guide',
+    content='This is a comprehensive guide about creating custom validators in Python...'
 )
 ```
 
 ---
 
-## Validadores Contextuales
+## Contextual Validators
 
-Los validadores pueden acceder a otros campos del modelo a través del parámetro `context`:
+Validators can access other model fields through the `context` parameter:
 
 ```python
-def password_not_contains_username(value, context=None):
-    """Valida que la contraseña no contenga el nombre de usuario"""
+def password_not_contains_username(value, context=None) -> bool:
+    '''
+    Validates that password does not contain username
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None or context is None:
         return True
-    
+
     username = context.get('username', '').lower()
     password = str(value).lower()
-    
+
     return username not in password
 
 class UserRegistrationModel(ValidatedModel):
     username: str = field_validated(is_required())
     password: str = field_validated(
         is_required(),
-        custom(password_not_contains_username, "Password cannot contain username")
+        custom(password_not_contains_username, 'Password cannot contain username')
     )
 
-# Uso válido
+# Valid usage
 user = UserRegistrationModel(
-    username="johndoe",
-    password="SecurePass123!"
+    username='johndoe',
+    password='SecurePass123!'
 )
 
-# Uso inválido
+# Invalid usage
 try:
     invalid_user = UserRegistrationModel(
-        username="johndoe",
-        password="johndoepass"
+        username='johndoe',
+        password='johndoe123'
     )
 except ValidationException as e:
     print(e.validations)  # {'password': 'Password cannot contain username'}
@@ -104,242 +135,220 @@ except ValidationException as e:
 
 ---
 
-## Validadores Complejos
+## Complex Validation Examples
 
-### Validación de Estructura de Datos
-
-```python
-def is_valid_address(value, context=None):
-    """Valida que el diccionario tenga la estructura de una dirección"""
-    if value is None:
-        return True
-    
-    if not isinstance(value, dict):
-        return False
-    
-    required_fields = ['street', 'city', 'postal_code']
-    return all(field in value and value[field] for field in required_fields)
-
-class CustomerModel(ValidatedModel):
-    name: str = field_validated(is_required())
-    address: dict = field_validated(
-        custom(is_valid_address, "Address must contain street, city, and postal_code")
-    )
-
-# Uso válido
-customer = CustomerModel(
-    name="John Doe",
-    address={
-        "street": "123 Main St",
-        "city": "Anytown",
-        "postal_code": "12345",
-        "country": "USA"  # Campo opcional
-    }
-)
-```
-
-### Validación de Listas con Elementos Específicos
+### Credit Card and ISBN Validators
 
 ```python
-def all_valid_emails(value, context=None):
-    """Valida que todos los elementos de la lista sean emails válidos"""
+def is_credit_card(value, context=None) -> bool:
+    '''
+    Validates credit card number using Luhn algorithm
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
-    
-    if not isinstance(value, list):
-        return False
-    
-    import re
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    
-    return all(re.match(email_pattern, str(email)) for email in value)
 
-class NewsletterModel(ValidatedModel):
-    subject: str = field_validated(is_required())
-    recipients: list = field_validated(
+    # Remove spaces and hyphens
+    card_number = str(value).replace(' ', '').replace('-', '')
+
+    # Check if all digits
+    if not card_number.isdigit():
+        return False
+
+    # Luhn algorithm
+    def luhn_checksum(card_num):
+        def digits_of(n):
+            return [int(d) for d in str(n)]
+
+        digits = digits_of(card_num)
+        odd_digits = digits[-1::-2]
+        even_digits = digits[-2::-2]
+        checksum = sum(odd_digits)
+        for d in even_digits:
+            checksum += sum(digits_of(d*2))
+        return checksum % 10
+
+    return luhn_checksum(card_number) == 0
+
+def is_isbn(value, context=None) -> bool:
+    '''
+    Validates ISBN-10 or ISBN-13
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
+    if value is None:
+        return True
+
+    isbn = str(value).replace('-', '').replace(' ', '')
+
+    if len(isbn) == 10:
+        return _validate_isbn10(isbn)
+    elif len(isbn) == 13:
+        return _validate_isbn13(isbn)
+    else:
+        return False
+
+def _validate_isbn10(isbn: str) -> bool:
+    '''
+    Validates ISBN-10
+
+    Args:
+        isbn (str): ISBN-10 number
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
+    if not (isbn[:-1].isdigit() and (isbn[-1].isdigit() or isbn[-1].upper() == 'X')):
+        return False
+
+    total = 0
+    for i, digit in enumerate(isbn[:-1]):
+        total += int(digit) * (10 - i)
+
+    check_digit = isbn[-1]
+    if check_digit.upper() == 'X':
+        total += 10
+    else:
+        total += int(check_digit)
+
+    return total % 11 == 0
+
+def _validate_isbn13(isbn: str) -> bool:
+    """Validates ISBN-13"""
+    if not isbn.isdigit():
+        return False
+
+    total = 0
+    for i, digit in enumerate(isbn[:-1]):
+        multiplier = 1 if i % 2 == 0 else 3
+        total += int(digit) * multiplier
+
+    check_digit = (10 - (total % 10)) % 10
+    return check_digit == int(isbn[-1])
+
+# Usage of custom validators
+class PaymentModel(ValidatedModel):
+    card_number: str = field_validated(
         is_required(),
-        custom(all_valid_emails, "All recipients must be valid email addresses")
+        custom(is_credit_card, 'Invalid credit card number')
     )
 
-# Uso
-newsletter = NewsletterModel(
-    subject="Monthly Newsletter",
-    recipients=["user1@example.com", "user2@example.com", "user3@example.com"]
-)
+class BookModel(ValidatedModel):
+    title: str = field_validated(is_required())
+    isbn: str = field_validated(
+        custom(is_isbn, 'Invalid ISBN format')
+    )
 ```
 
 ---
 
-## Validadores con Dependencias Externas
+## Validators with External Dependencies
 
-### Validación con Base de Datos
+### Database Validation
 
 ```python
-def username_not_exists(value, context=None):
-    """Valida que el username no exista en la base de datos"""
+def username_not_exists(value, context=None) -> bool:
+    '''
+    Validates that username does not exist in database
+    
+    
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
-    
-    # Simulación de consulta a base de datos
-    existing_usernames = ["admin", "root", "test", "demo"]  # En la práctica, esto vendría de la DB
-    
+
+    # Database query simulation
+    existing_usernames = ['admin', 'root', 'test', 'demo']  # In practice, this would come from DB
+
     return str(value).lower() not in existing_usernames
 
 class NewUserModel(ValidatedModel):
     username: str = field_validated(
         is_required(),
         min_length(3),
-        custom(username_not_exists, "Username already exists")
+        custom(username_not_exists, 'Username already exists')
     )
     email: str = field_validated(is_required(), is_email())
 ```
 
-### Validación con APIs Externas
+### External API Validation
 
 ```python
-def is_valid_country_code(value, context=None):
-    """Valida código de país usando una lista predefinida"""
+def is_valid_country_code(value, context=None) -> bool:
+    '''
+    Validates country code using a predefined list
+    
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
-    
-    # Lista de códigos ISO 3166-1 alpha-2 (simulada)
+
+    # ISO 3166-1 alpha-2 codes list (simulated)
     valid_codes = {
-        "US", "CA", "GB", "FR", "DE", "IT", "ES", "BR", "AR", "CO", 
-        "MX", "JP", "CN", "IN", "AU", "NZ", "ZA", "EG", "NG", "KE"
+        'US', 'CA', 'GB', 'FR', 'DE', 'IT', 'ES', 'BR', 'AR', 'CO',
+        'MX', 'JP', 'CN', 'IN', 'AU', 'NZ', 'ZA', 'EG', 'NG', 'KE'
     }
-    
+
     return str(value).upper() in valid_codes
 
 class InternationalOrderModel(ValidatedModel):
     customer_name: str = field_validated(is_required())
     country_code: str = field_validated(
         is_required(),
-        custom(is_valid_country_code, "Invalid country code")
+        custom(is_valid_country_code, 'Invalid country code')
     )
 ```
 
 ---
 
-## Validadores Reutilizables
+## Validators with Advanced Configuration
 
-### Creando una Librería de Validadores
-
-```python
-# validators_library.py
-import re
-from typing import Any, Optional, Dict, List, Set
-
-def is_credit_card(value: Any, context: Optional[Dict[str, Any]] = None) -> bool:
-    """Valida número de tarjeta de crédito usando algoritmo de Luhn"""
-    if value is None:
-        return True
-    
-    # Remover espacios y guiones
-    card_number = re.sub(r'[\s-]', '', str(value))
-    
-    # Verificar que solo contenga dígitos
-    if not card_number.isdigit():
-        return False
-    
-    # Algoritmo de Luhn
-    digits = [int(d) for d in card_number]
-    for i in range(len(digits) - 2, -1, -2):
-        digits[i] *= 2
-        if digits[i] > 9:
-            digits[i] -= 9
-    
-    return sum(digits) % 10 == 0
-
-def is_isbn(value: Any, context: Optional[Dict[str, Any]] = None) -> bool:
-    """Valida código ISBN-10 o ISBN-13"""
-    if value is None:
-        return True
-    
-    isbn = re.sub(r'[\s-]', '', str(value))
-    
-    if len(isbn) == 10:
-        return _validate_isbn10(isbn)
-    elif len(isbn) == 13:
-        return _validate_isbn13(isbn)
-    
-    return False
-
-def _validate_isbn10(isbn: str) -> bool:
-    """Valida ISBN-10"""
-    if not isbn[:-1].isdigit():
-        return False
-    
-    if isbn[-1] not in '0123456789X':
-        return False
-    
-    total = 0
-    for i, digit in enumerate(isbn[:-1]):
-        total += int(digit) * (10 - i)
-    
-    check_digit = isbn[-1]
-    if check_digit == 'X':
-        total += 10
-    else:
-        total += int(check_digit)
-    
-    return total % 11 == 0
-
-def _validate_isbn13(isbn: str) -> bool:
-    """Valida ISBN-13"""
-    if not isbn.isdigit():
-        return False
-    
-    total = 0
-    for i, digit in enumerate(isbn[:-1]):
-        multiplier = 1 if i % 2 == 0 else 3
-        total += int(digit) * multiplier
-    
-    check_digit = (10 - (total % 10)) % 10
-    return check_digit == int(isbn[-1])
-
-# Uso de los validadores personalizados
-class PaymentModel(ValidatedModel):
-    card_number: str = field_validated(
-        is_required(),
-        custom(is_credit_card, "Invalid credit card number")
-    )
-
-class BookModel(ValidatedModel):
-    title: str = field_validated(is_required())
-    isbn: str = field_validated(
-        custom(is_isbn, "Invalid ISBN format")
-    )
-```
-
----
-
-## Validadores con Configuración Avanzada
-
-### Validador Configurable para Archivos
+### Configurable File Validator
 
 ```python
-def file_extension_validator(allowed_extensions: List[str], case_sensitive: bool = False):
-    """Factory para validar extensiones de archivo"""
+def file_extension_validator(allowed_extensions: list) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Creates a validator for file extensions
     
+    Args:
+        allowed_extensions (list): List of allowed file extensions
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Validator function
+    '''
     def validator(value, context=None):
         if value is None:
             return True
-        
-        filename = str(value)
-        if '.' not in filename:
+
+        file_path = str(value)
+        if '.' not in file_path:
             return False
-        
-        extension = filename.split('.')[-1]
-        
-        if not case_sensitive:
-            extension = extension.lower()
-            allowed_extensions_lower = [ext.lower() for ext in allowed_extensions]
-            return extension in allowed_extensions_lower
-        else:
-            return extension in allowed_extensions
-    
-    extensions_str = ", ".join(allowed_extensions)
-    validator.__message__ = f"File must have one of these extensions: {extensions_str}"
+
+        extension = file_path.split('.')[-1].lower()
+        return extension in [ext.lower() for ext in allowed_extensions]
+
+    validator.__message__ = f"File must have one of these extensions: {', '.join(allowed_extensions)}"
     return validator
 
 class DocumentModel(ValidatedModel):
@@ -347,27 +356,35 @@ class DocumentModel(ValidatedModel):
     file_path: str = field_validated(
         is_required(),
         custom(
-            file_extension_validator(["pdf", "doc", "docx", "txt"]),
-            "Document must be PDF, DOC, DOCX, or TXT"
+            file_extension_validator(['pdf', 'doc', 'docx', 'txt']),
+            'Document must be PDF, DOC, DOCX, or TXT'
         )
     )
 
-# Uso
+# Usage
 document = DocumentModel(
-    document_name="User Manual",
-    file_path="manual.pdf"
+    document_name='User Manual',
+    file_path='manual.pdf'
 )
 ```
 
 ---
 
-## Mejores Prácticas
+## Best Practices
 
-### 1. Manejo de Errores
+### 1. Error Handling
 
 ```python
-def safe_validator(validation_func):
-    """Decorator para manejar errores en validadores"""
+def safe_validator(validation_func) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Decorator to handle errors in validators
+    
+    Args:
+        validation_func (Callable[[Any, Optional[Dict[str, Any]]], bool]): Validator function
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Wrapped validator function
+    '''
     def wrapper(value, context=None):
         try:
             return validation_func(value, context)
@@ -377,40 +394,48 @@ def safe_validator(validation_func):
 
 @safe_validator
 def complex_validation(value, context=None):
-    # Código de validación que puede lanzar excepciones
+    # Validation code that might throw exceptions
     result = some_complex_operation(value)
     return result.is_valid()
 ```
 
-### 2. Validadores Composibles
+### 2. Composable Validators
 
 ```python
-def compose_validators(*validators):
-    """Combina múltiples validadores en uno solo"""
+def compose_validators(*validators) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Combines multiple validators into one
+    
+    Args:
+        *validators (Callable[[Any, Optional[Dict[str, Any]]], bool]): Validator functions
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Composed validator function
+    '''
     def composed_validator(value, context=None):
         return all(validator(value, context) for validator in validators)
-    
+
     return composed_validator
 
-# Uso
+# Usage
 def is_valid_product_code(value, context=None):
-    # Validaciones específicas del código de producto
+    # Specific product code validations
     return True
 
 def is_unique_product_code(value, context=None):
-    # Verificar unicidad en base de datos
+    # Check uniqueness in database
     return True
 
 class ProductModel(ValidatedModel):
     product_code: str = field_validated(
         custom(
             compose_validators(is_valid_product_code, is_unique_product_code),
-            "Invalid or duplicate product code"
+            'Invalid or duplicate product code'
         )
     )
 ```
 
-### 3. Testing de Validadores
+### 3. Testing Validators
 
 ```python
 import pytest
@@ -421,14 +446,55 @@ def test_custom_validator():
             return True
         clean_value = str(value).replace(' ', '').lower()
         return clean_value == clean_value[::-1]
-    
+
     # Tests
-    assert is_palindrome("racecar") == True
-    assert is_palindrome("race a car") == False
-    assert is_palindrome("A man a plan a canal Panama") == False
+    assert is_palindrome('racecar') == True
+    assert is_palindrome('race a car') == False
+    assert is_palindrome('A man a plan a canal Panama') == False
     assert is_palindrome(None) == True
 
-# Ejecutar: pytest test_validators.py
+def test_validator_with_model():
+    class TestModel(ValidatedModel):
+        palindrome_text: str = field_validated(
+            custom(is_palindrome, 'Text must be a palindrome')
+        )
+
+    # Valid case
+    model = TestModel(palindrome_text='racecar')
+    assert model.palindrome_text == 'racecar'
+
+    # Invalid case
+    with pytest.raises(ValidationException):
+        TestModel(palindrome_text='not a palindrome')
+
+# Run: pytest test_custom_validators.py -v
 ```
 
-Los validadores personalizados te dan la flexibilidad completa para manejar cualquier caso de validación específico de tu aplicación, manteniendo la consistencia con el resto del sistema de validación de PyValidX.
+### 4. Performance Optimization
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+def expensive_validation(value) -> bool:
+    '''
+    Cached expensive validation
+
+    Args:
+        value (Any): Value to validate
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
+    # Expensive operation here
+    import time
+    time.sleep(0.1)  # Simulate expensive operation
+    return len(str(value)) > 5
+
+class OptimizedModel(ValidatedModel):
+    data: str = field_validated(
+        custom(expensive_validation, 'Data validation failed')
+    )
+```
+
+Custom validators provide the flexibility to implement any validation logic specific to your business requirements while maintaining consistency with PyValidX's validation framework.

@@ -1,114 +1,110 @@
 # Date Validators
 
-Los validadores de fecha proporcionan funcionalidades para validar fechas, formatos temporales y rangos de tiempo.
+Date validators provide functionalities for validating dates and times in different formats.
 
 ## is_date
 
-Valida que el campo tenga un formato de fecha válido.
+Validates that the field is a valid date in the specified format.
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
 from pyvalidx.date import is_date
 
 class EventModel(ValidatedModel):
-    start_date: str = field_validated(is_date())
-    end_date: str = field_validated(is_date("%d/%m/%Y", "Use DD/MM/YYYY format"))
+    event_date: str = field_validated(is_date())
+    custom_date: str = field_validated(
+        is_date('%d/%m/%Y', 'Date must be in DD/MM/YYYY format')
+    )
 
-# Uso válido (formato por defecto: YYYY-MM-DD)
+# Valid usage
 event = EventModel(
-    start_date="2024-12-25",
-    end_date="31/12/2024"
+    event_date='2024-12-25',
+    custom_date='25/12/2024'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_event = EventModel(start_date="invalid-date")
+    invalid_event = EventModel(event_date='invalid-date')
 except ValidationException as e:
-    print(e.validations)  # {'start_date': 'Invalid date format'}
+    print(e.validations)  # {'event_date': 'Invalid date format'}
 ```
 
-### Parámetros
-- `format` (str, opcional): Formato de fecha esperado. Por defecto: "%Y-%m-%d"
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Invalid date format"
-
-### Formatos comunes:
-- `%Y-%m-%d`: 2024-12-25
-- `%d/%m/%Y`: 25/12/2024
-- `%m/%d/%Y`: 12/25/2024
-- `%Y-%m-%d %H:%M:%S`: 2024-12-25 14:30:00
+### Parameters
+- `format` (str, optional): Expected date format. Default: '%Y-%m-%d'
+- `message` (str, optional): Custom error message. Default: 'Invalid date format'
 
 ---
 
 ## is_future_date
 
-Valida que la fecha esté en el futuro.
+Validates that the date is in the future.
 
 ```python
 from pyvalidx.date import is_future_date
 
-class ReservationModel(ValidatedModel):
-    check_in: str = field_validated(is_future_date())
-    check_out: str = field_validated(
-        is_future_date("%d/%m/%Y", "Check-out must be a future date in DD/MM/YYYY format")
+class AppointmentModel(ValidatedModel):
+    appointment_date: str = field_validated(is_future_date())
+    deadline: str = field_validated(
+        is_future_date('%d-%m-%Y', 'Deadline must be in the future')
     )
 
-# Uso válido
+# Valid usage
 from datetime import datetime, timedelta
-tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
-reservation = ReservationModel(
-    check_in=tomorrow,
-    check_out="25/12/2024"
+appointment = AppointmentModel(
+    appointment_date=tomorrow,
+    deadline=(datetime.now() + timedelta(days=7)).strftime('%d-%m-%Y')
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    past_reservation = ReservationModel(check_in="2020-01-01")
+    past_appointment = AppointmentModel(appointment_date='2020-01-01')
 except ValidationException as e:
-    print(e.validations)  # {'check_in': 'Date must be in the future'}
+    print(e.validations)  # {'appointment_date': 'Date must be in the future'}
 ```
 
-### Parámetros
-- `format` (str, opcional): Formato de fecha esperado. Por defecto: "%Y-%m-%d"
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Date must be in the future"
+### Parameters
+- `format` (str, optional): Expected date format. Default: '%Y-%m-%d'
+- `message` (str, optional): Custom error message. Default: 'Date must be in the future'
 
 ---
 
 ## is_past_date
 
-Valida que la fecha esté en el pasado.
+Validates that the date is in the past.
 
 ```python
 from pyvalidx.date import is_past_date
 
-class HistoryEventModel(ValidatedModel):
+class HistoryModel(ValidatedModel):
     birth_date: str = field_validated(is_past_date())
     graduation_date: str = field_validated(
-        is_past_date("%m/%d/%Y", "Graduation date must be in the past")
+        is_past_date('%d/%m/%Y', 'Graduation date must be in the past')
     )
 
-# Uso válido
-history = HistoryEventModel(
-    birth_date="1990-05-15",
-    graduation_date="12/20/2015"
+# Valid usage
+history = HistoryModel(
+    birth_date='1990-03-15',
+    graduation_date='15/06/2020'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    future_history = HistoryEventModel(birth_date="2030-01-01")
+    future_birth = HistoryModel(birth_date='2030-01-01')
 except ValidationException as e:
     print(e.validations)  # {'birth_date': 'Date must be in the past'}
 ```
 
-### Parámetros
-- `format` (str, opcional): Formato de fecha esperado. Por defecto: "%Y-%m-%d"
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Date must be in the past"
+### Parameters
+- `format` (str, optional): Expected date format. Default: '%Y-%m-%d'
+- `message` (str, optional): Custom error message. Default: 'Date must be in the past'
 
 ---
 
 ## is_today
 
-Valida que la fecha sea exactamente hoy.
+Validates that the date is exactly today.
 
 ```python
 from pyvalidx.date import is_today
@@ -116,32 +112,32 @@ from pyvalidx.date import is_today
 class DailyReportModel(ValidatedModel):
     report_date: str = field_validated(is_today())
     submission_date: str = field_validated(
-        is_today("%d-%m-%Y", "Report must be submitted today")
+        is_today('%d-%m-%Y', 'Report must be submitted today')
     )
 
-# Uso válido
+# Valid usage
 from datetime import datetime
-today = datetime.now().strftime("%Y-%m-%d")
+today = datetime.now().strftime('%Y-%m-%d')
 
 report = DailyReportModel(
     report_date=today,
-    submission_date=datetime.now().strftime("%d-%m-%Y")
+    submission_date=datetime.now().strftime('%d-%m-%Y')
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    wrong_report = DailyReportModel(report_date="2024-01-01")
+    wrong_report = DailyReportModel(report_date='2024-01-01')
 except ValidationException as e:
     print(e.validations)  # {'report_date': 'Date must be today'}
 ```
 
-### Parámetros
-- `format` (str, opcional): Formato de fecha esperado. Por defecto: "%Y-%m-%d"
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Date must be today"
+### Parameters
+- `format` (str, optional): Expected date format. Default: '%Y-%m-%d'
+- `message` (str, optional): Custom error message. Default: 'Date must be today'
 
 ---
 
-## Ejemplo Completo: Sistema de Reservas
+## Complete Example: Hotel Reservation System
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -150,26 +146,26 @@ from pyvalidx.date import is_date, is_future_date
 from datetime import datetime, timedelta
 
 class HotelReservationModel(ValidatedModel):
-    guest_name: str = field_validated(is_required("Guest name is required"))
-    
+    guest_name: str = field_validated(is_required('Guest name is required'))
+
     check_in_date: str = field_validated(
-        is_required("Check-in date is required"),
-        is_date("%Y-%m-%d", "Check-in date must be in YYYY-MM-DD format"),
-        is_future_date("%Y-%m-%d", "Check-in date must be in the future")
-    )
-    
-    check_out_date: str = field_validated(
-        is_required("Check-out date is required"),
-        is_date("%Y-%m-%d", "Check-out date must be in YYYY-MM-DD format"),
-        is_future_date("%Y-%m-%d", "Check-out date must be in the future")
+        is_required('Check-in date is required'),
+        is_date('%Y-%m-%d', 'Check-in date must be in YYYY-MM-DD format'),
+        is_future_date('%Y-%m-%d', 'Check-in date must be in the future')
     )
 
-# Uso válido
-tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-next_week = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+    check_out_date: str = field_validated(
+        is_required('Check-out date is required'),
+        is_date('%Y-%m-%d', 'Check-out date must be in YYYY-MM-DD format'),
+        is_future_date('%Y-%m-%d', 'Check-out date must be in the future')
+    )
+
+# Valid usage
+tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
 
 reservation = HotelReservationModel(
-    guest_name="John Doe",
+    guest_name='John Doe',
     check_in_date=tomorrow,
     check_out_date=next_week
 )
@@ -177,7 +173,7 @@ reservation = HotelReservationModel(
 
 ---
 
-## Ejemplo: Validación de Fechas de Nacimiento
+## Example: Birth Date Validation
 
 ```python
 from pyvalidx.date import is_past_date
@@ -187,78 +183,84 @@ from datetime import datetime
 class PersonModel(ValidatedModel):
     name: str = field_validated(is_required())
     birth_date: str = field_validated(
-        is_required("Birth date is required"),
-        is_date("%Y-%m-%d", "Birth date must be in YYYY-MM-DD format"),
-        is_past_date("%Y-%m-%d", "Birth date must be in the past")
+        is_required('Birth date is required'),
+        is_date('%Y-%m-%d', 'Birth date must be in YYYY-MM-DD format'),
+        is_past_date('%Y-%m-%d', 'Birth date must be in the past')
     )
-    
+
     @property
     def age(self) -> int:
-        birth = datetime.strptime(self.birth_date, "%Y-%m-%d")
+        '''
+        Calculates the age based on the birth date
+
+        Returns:
+            int: Age in years
+        '''
+        birth = datetime.strptime(self.birth_date, '%Y-%m-%d')
         today = datetime.now()
         return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
-# Uso
+# Usage
 person = PersonModel(
-    name="Alice Smith",
-    birth_date="1990-03-15"
+    name='Alice Smith',
+    birth_date='1990-03-15'
 )
-print(f"{person.name} is {person.age} years old")
+print(f'{person.name} is {person.age} years old')
 ```
 
 ---
 
-## Ejemplo: Validación de Eventos con Múltiples Fechas
+## Example: Event Validation with Multiple Dates
 
 ```python
 class ConferenceModel(ValidatedModel):
     title: str = field_validated(is_required())
-    
+
     registration_deadline: str = field_validated(
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d", "Registration deadline must be in the future")
-    )
-    
-    event_start: str = field_validated(
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d", "Event start date must be in the future")
-    )
-    
-    event_end: str = field_validated(
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d", "Event end date must be in the future")
+        is_date('%Y-%m-%d'),
+        is_future_date('%Y-%m-%d', 'Registration deadline must be in the future')
     )
 
-# Uso
+    event_start: str = field_validated(
+        is_date('%Y-%m-%d'),
+        is_future_date('%Y-%m-%d', 'Event start date must be in the future')
+    )
+
+    event_end: str = field_validated(
+        is_date('%Y-%m-%d'),
+        is_future_date('%Y-%m-%d', 'Event end date must be in the future')
+    )
+
+# Usage
 from datetime import datetime, timedelta
 
 conference = ConferenceModel(
-    title="Python Conference 2024",
-    registration_deadline=(datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"),
-    event_start=(datetime.now() + timedelta(days=60)).strftime("%Y-%m-%d"),
-    event_end=(datetime.now() + timedelta(days=63)).strftime("%Y-%m-%d")
+    title='Python Conference 2024',
+    registration_deadline=(datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
+    event_start=(datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d'),
+    event_end=(datetime.now() + timedelta(days=63)).strftime('%Y-%m-%d')
 )
 ```
 
 ---
 
-## Formatos de Fecha Soportados
+## Supported Date Formats
 
-| Formato | Ejemplo | Descripción |
+| Format | Example | Description |
 |---------|---------|-------------|
-| `%Y-%m-%d` | 2024-12-25 | Año-Mes-Día (ISO) |
-| `%d/%m/%Y` | 25/12/2024 | Día/Mes/Año (Europeo) |
-| `%m/%d/%Y` | 12/25/2024 | Mes/Día/Año (Americano) |
-| `%Y-%m-%d %H:%M:%S` | 2024-12-25 14:30:00 | Fecha y hora completa |
-| `%d-%m-%Y` | 25-12-2024 | Día-Mes-Año con guiones |
-| `%Y/%m/%d` | 2024/12/25 | Año/Mes/Día con barras |
+| `%Y-%m-%d` | 2024-12-25 | Year-Month-Day (ISO) |
+| `%d/%m/%Y` | 25/12/2024 | Day/Month/Year (European) |
+| `%m/%d/%Y` | 12/25/2024 | Month/Day/Year (American) |
+| `%Y-%m-%d %H:%M:%S` | 2024-12-25 14:30:00 | Full date and time |
+| `%d-%m-%Y` | 25-12-2024 | Day-Month-Year with hyphens |
+| `%Y/%m/%d` | 2024/12/25 | Year/Month/Day with slashes |
 
 ---
 
-## Notas Importantes
+## Important Notes
 
-- Los validadores de fecha retornan `True` si el valor es `None` (para campos opcionales)
-- Las fechas se comparan usando `datetime.now()` al momento de la validación
-- Si el formato de fecha es inválido, el validador retorna `False`
-- Puedes combinar validadores de fecha con otros validadores para crear validaciones más complejas
-- Para campos opcionales de fecha, considera usar `Optional[str]` en la anotación de tipo
+- Date validators return `True` if the value is `None` (for optional fields)
+- Dates are compared using `datetime.now()` at validation time
+- If the date format is invalid, the validator returns `False`
+- You can combine date validators with other validators for more complex validations
+- For optional date fields, consider using `Optional[str]` in the type annotation

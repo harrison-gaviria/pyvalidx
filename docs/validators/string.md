@@ -1,10 +1,10 @@
 # String Validators
 
-Los validadores de cadenas proporcionan funcionalidades específicas para validar y verificar formatos de texto.
+String validators provide specific functionalities for validating and verifying text formats.
 
 ## is_email
 
-Valida que el campo tenga un formato de email válido.
+Validates that the field has a valid email format.
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -12,228 +12,270 @@ from pyvalidx.string import is_email
 
 class ContactModel(ValidatedModel):
     email: str = field_validated(is_email())
-    backup_email: str = field_validated(is_email("Please provide a valid backup email"))
+    backup_email: str = field_validated(is_email('Please provide a valid backup email'))
 
-# Uso válido
+# Valid usage
 contact = ContactModel(
-    email="user@example.com",
-    backup_email="backup@domain.org"
+    email='user@example.com',
+    backup_email='backup@domain.org'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_contact = ContactModel(email="invalid-email")
+    invalid_contact = ContactModel(email='invalid-email')
 except ValidationException as e:
     print(e.validations)  # {'email': 'Invalid email format'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Invalid email format"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Invalid email format'
 
 ---
 
 ## is_strong_password
 
-Valida que la contraseña sea fuerte (mínimo 8 caracteres, mayúsculas, minúsculas, números y símbolos).
+Validates that the password meets security criteria.
 
 ```python
 from pyvalidx.string import is_strong_password
 
-class SecurityModel(ValidatedModel):
+class UserModel(ValidatedModel):
     password: str = field_validated(is_strong_password())
     admin_password: str = field_validated(
-        is_strong_password("Admin password must be extra secure")
+        is_strong_password('Admin password must be stronger')
     )
 
-# Uso válido
-security = SecurityModel(
-    password="MySecure123!",
-    admin_password="AdminPass456@"
+# Valid usage
+user = UserModel(
+    password='MySecurePass123!',
+    admin_password='AdminPass456@'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    weak_security = SecurityModel(password="123")
+    weak_user = UserModel(password='123')
 except ValidationException as e:
-    print(e.validations)  # {'password': 'Password must be strong'}
+    print(e.validations)  # {'password': 'Password is not strong enough'}
 ```
 
-### Requisitos de contraseña fuerte:
-- Mínimo 8 caracteres
-- Al menos una letra mayúscula
-- Al menos una letra minúscula  
-- Al menos un número
-- Al menos un símbolo especial
+### Security criteria:
+- **Minimum length**: 8 characters
+- **Uppercase letters**: At least 1
+- **Lowercase letters**: At least 1
+- **Numbers**: At least 1
+- **Special characters**: At least 1 (!@#$%^&*()_+-=[]{}|;:,.<>?)
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Password must be strong"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Password is not strong enough'
 
 ---
 
 ## matches_regex
 
-Valida que el campo coincida con una expresión regular específica.
+Validates that the field matches a regular expression pattern.
 
 ```python
 from pyvalidx.string import matches_regex
 
 class ProductModel(ValidatedModel):
     sku: str = field_validated(
-        matches_regex(r'^[A-Z]{2}\d{4}$', "SKU must be 2 letters followed by 4 numbers")
+        matches_regex(r'^[A-Z]{3}-\d{4}$', 'SKU must follow format ABC-1234')
     )
-    postal_code: str = field_validated(
-        matches_regex(r'^\d{5}$', "Postal code must be 5 digits")
+    license_plate: str = field_validated(
+        matches_regex(r'^[A-Z]{3}\d{3}$')
     )
 
-# Uso válido
+# Valid usage
 product = ProductModel(
-    sku="AB1234",
-    postal_code="12345"
+    sku='ABC-1234',
+    license_plate='ABC123'
 )
 ```
 
-### Parámetros
-- `pattern` (str): Expresión regular a coincidir
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Invalid format"
+### Parameters
+- `pattern` (str): Regular expression to match
+- `message` (str, optional): Custom error message. Default: 'Invalid format'
 
 ---
 
 ## no_whitespace
 
-Valida que el campo no contenga espacios en blanco.
+Validates that the field does not contain whitespace.
 
 ```python
 from pyvalidx.string import no_whitespace
 
 class UserModel(ValidatedModel):
     username: str = field_validated(no_whitespace())
-    api_key: str = field_validated(no_whitespace("API key cannot contain spaces"))
+    api_key: str = field_validated(no_whitespace('API key cannot contain spaces'))
 
-# Uso válido
+# Valid usage
 user = UserModel(
-    username="johndoe",
-    api_key="abc123def456"
+    username='johndoe',
+    api_key='abc123def456'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_user = UserModel(username="john doe")
+    invalid_user = UserModel(username='john doe')
 except ValidationException as e:
     print(e.validations)  # {'username': 'Must not contain spaces'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Must not contain spaces"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must not contain spaces'
 
 ---
 
 ## is_phone
 
-Valida números de teléfono colombianos (móviles y fijos).
+Validates that the field is a valid phone number (Colombian format).
 
 ```python
 from pyvalidx.string import is_phone
 
-class ContactInfoModel(ValidatedModel):
+class ContactModel(ValidatedModel):
     mobile: str = field_validated(is_phone())
-    landline: str = field_validated(is_phone("Invalid landline format"))
+    landline: str = field_validated(is_phone('Invalid landline format'))
 
-# Uso válido
-contact = ContactInfoModel(
-    mobile="3001234567",      # Móvil
-    landline="6012345678"     # Fijo
+# Valid usage
+contact = ContactModel(
+    mobile='3001234567',
+    landline='6012345678'
 )
 
-# También acepta formato internacional
-international_contact = ContactInfoModel(
-    mobile="+573001234567",
-    landline="6012345678"
-)
+# Invalid usage
+try:
+    invalid_contact = ContactModel(mobile='123')
+except ValidationException as e:
+    print(e.validations)  # {'mobile': 'Invalid phone format'}
 ```
 
-### Formatos soportados:
-- **Móviles**: `3XXXXXXXXX` (10 dígitos empezando por 3)
-- **Fijos**: `[1-8]XXXXXXX` o `[1-8]XXXXXXXX` (7-8 dígitos)
-- **Internacional**: `+573XXXXXXXXX` para móviles
+### Supported formats:
+- **Mobile**: `3XXXXXXXXX` (10 digits starting with 3)
+- **Landline**: `[1-8]XXXXXXX` or `[1-8]XXXXXXXX` (7-8 digits)
+- **International**: `+573XXXXXXXXX` for mobile
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Invalid phone format"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Invalid phone format'
 
 ---
 
 ## has_no_common_password
 
-Valida que la contraseña no esté en una lista de contraseñas comunes.
+Validates that the password is not in a list of common passwords.
 
 ```python
 from pyvalidx.string import has_no_common_password
 
-# Lista de contraseñas comunes
+# List of common passwords
 COMMON_PASSWORDS = {
-    "123456", "password", "12345678", "qwerty", 
-    "123456789", "12345", "1234", "111111"
+    '123456', 'password', '12345678', 'qwerty',
+    '123456789', '12345', '1234', '111111'
 }
 
 class SecureUserModel(ValidatedModel):
     password: str = field_validated(
+        has_no_common_password(COMMON_PASSWORDS)
+    )
+    backup_password: str = field_validated(
         has_no_common_password(
-            COMMON_PASSWORDS, 
-            "Please choose a more unique password"
+            COMMON_PASSWORDS,
+            'Backup password is too common'
         )
     )
 
-# Uso válido
-user = SecureUserModel(password="MyUniquePass123!")
+# Valid usage
+user = SecureUserModel(
+    password='MyUniquePass123!',
+    backup_password='AnotherSecurePass456@'
+)
 
-# Uso inválido
+# Invalid usage
 try:
-    weak_user = SecureUserModel(password="123456")
+    weak_user = SecureUserModel(password='123456')
 except ValidationException as e:
-    print(e.validations)  # {'password': 'Please choose a more unique password'}
+    print(e.validations)  # {'password': 'Password is too common'}
 ```
 
-### Parámetros
-- `dictionary` (Union[List[str], Set[str]]): Lista o set de contraseñas prohibidas
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Password is too common"
+### Parameters
+- `dictionary` (Union[List[str], Set[str]]): List or set of forbidden passwords
+- `message` (str, optional): Custom error message. Default: 'Password is too common'
 
 ---
 
-## Ejemplo Completo: Registro de Usuario
+## Complete Example: User Registration
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
 from pyvalidx.core import is_required, min_length, same_as
 from pyvalidx.string import is_email, is_strong_password, no_whitespace
 
-COMMON_PASSWORDS = {"123456", "password", "qwerty"}
+COMMON_PASSWORDS = {'123456', 'password', 'qwerty'}
 
 class UserRegistrationModel(ValidatedModel):
     username: str = field_validated(
-        is_required("Username is required"),
-        min_length(3, "Username must be at least 3 characters"),
-        no_whitespace("Username cannot contain spaces")
-    )
-    
-    email: str = field_validated(
-        is_required("Email is required"),
-        is_email("Please provide a valid email address")
-    )
-    
-    password: str = field_validated(
-        is_required("Password is required"),
-        is_strong_password("Password must be strong"),
-        has_no_common_password(COMMON_PASSWORDS, "Password is too common")
-    )
-    
-    confirm_password: str = field_validated(
-        same_as("password", "Passwords must match")
+        is_required('Username is required'),
+        min_length(3, 'Username must be at least 3 characters'),
+        no_whitespace('Username cannot contain spaces')
     )
 
-# Uso
+    email: str = field_validated(
+        is_required('Email is required'),
+        is_email('Please provide a valid email address')
+    )
+
+    password: str = field_validated(
+        is_required('Password is required'),
+        is_strong_password('Password must be strong'),
+        has_no_common_password(COMMON_PASSWORDS, 'Password is too common')
+    )
+
+    confirm_password: str = field_validated(
+        is_required('Password confirmation is required'),
+        same_as('password', 'Passwords must match')
+    )
+
+# Usage
 registration = UserRegistrationModel(
-    username="johndoe",
-    email="john@example.com",
-    password="SecurePass123!",
-    confirm_password="SecurePass123!"
+    username='johndoe',
+    email='john@example.com',
+    password='MySecurePass123!',
+    confirm_password='MySecurePass123!'
 )
 ```
+
+---
+
+## Advanced String Validation
+
+```python
+from pyvalidx.string import matches_regex, no_whitespace
+from pyvalidx.core import min_length, max_length
+
+class ProductCodeModel(ValidatedModel):
+    # Product code: 3 letters + hyphen + 4 numbers
+    product_code: str = field_validated(
+        is_required('Product code is required'),
+        matches_regex(
+            r'^[A-Z]{3}-\d{4}$',
+            'Product code must follow format ABC-1234'
+        )
+    )
+
+    # Internal reference: no spaces, 6-12 characters
+    internal_ref: str = field_validated(
+        is_required('Internal reference is required'),
+        min_length(6, 'Reference too short'),
+        max_length(12, 'Reference too long'),
+        no_whitespace('Reference cannot contain spaces')
+    )
+
+# Usage
+product = ProductCodeModel(
+    product_code='ABC-1234',
+    internal_ref='REF123456'
+)
+```
+
+

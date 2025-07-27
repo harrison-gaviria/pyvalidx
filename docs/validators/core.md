@@ -1,10 +1,10 @@
 # Core Validators
 
-Los validadores core proporcionan funcionalidades básicas de validación que son fundamentales para la mayoría de casos de uso.
+Core validators provide basic validation functionalities that are fundamental for most use cases.
 
 ## is_required
 
-Valida que el campo no sea `None`, cadena vacía, o lista vacía.
+Validates that the field is not `None`, empty string, or empty list.
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -12,98 +12,108 @@ from pyvalidx.core import is_required
 
 class UserModel(ValidatedModel):
     name: str = field_validated(is_required())
-    email: str = field_validated(is_required("Email is mandatory"))
+    email: str = field_validated(is_required('Email is mandatory'))
 
-# Uso
+# Usage
 try:
-    user = UserModel(name="", email="john@example.com")
+    user = UserModel(name='', email='john@example.com')
 except ValidationException as e:
     print(e.validations)  # {'name': 'This field is required'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "This field is required"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'This field is required'
 
 ---
 
 ## min_length
 
-Valida que el campo tenga al menos la longitud especificada.
+Validates that the field has at least the specified length.
 
 ```python
 from pyvalidx.core import min_length
 
 class ProductModel(ValidatedModel):
     name: str = field_validated(min_length(3))
-    description: str = field_validated(min_length(10, "Description too short"))
+    description: str = field_validated(min_length(10, 'Description too short'))
 
-# Uso
+# Usage
 product = ProductModel(
-    name="iPhone", 
-    description="Latest smartphone model"
+    name='iPhone',
+    description='Latest smartphone model'
 )
 ```
 
-### Parámetros
-- `length` (int): Longitud mínima requerida
-- `message` (str, opcional): Mensaje de error personalizado
+### Parameters
+- `length` (int): Minimum required length
+- `message` (str, optional): Custom error message
 
 ---
 
 ## max_length
 
-Valida que el campo tenga como máximo la longitud especificada.
+Validates that the field has at most the specified length.
 
 ```python
 from pyvalidx.core import max_length
 
 class CommentModel(ValidatedModel):
     title: str = field_validated(max_length(100))
-    content: str = field_validated(max_length(500, "Comment too long"))
+    content: str = field_validated(max_length(500, 'Comment too long'))
 
-# Uso
+# Usage
 comment = CommentModel(
-    title="Great product!",
-    content="I really enjoyed using this product..."
+    title='Great product!',
+    content='I really enjoyed using this product...'
 )
 ```
 
-### Parámetros
-- `length` (int): Longitud máxima permitida
-- `message` (str, opcional): Mensaje de error personalizado
+### Parameters
+- `length` (int): Maximum allowed length
+- `message` (str, optional): Custom error message
 
 ---
 
 ## custom
 
-Envuelve una función de validación personalizada con un mensaje.
+Wraps a custom validation function with a message.
 
 ```python
 from pyvalidx.core import custom
 
-def is_even(value, context=None):
+def is_even(value, context=None) -> bool:
+    '''
+    Validates that the number is even
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
     return value % 2 == 0
 
 class NumberModel(ValidatedModel):
     even_number: int = field_validated(
-        custom(is_even, "Number must be even")
+        custom(is_even, 'Number must be even')
     )
 
-# Uso
-number = NumberModel(even_number=4)  # Válido
+# Usage
+number = NumberModel(even_number=4)  # Valid
 ```
 
-### Parámetros
-- `validator_func`: Función que recibe (value, context) y retorna bool
-- `message` (str): Mensaje de error si la validación falla
+### Parameters
+- `validator_func`: Function that receives (value, context) and returns bool
+- `message` (str): Error message if validation fails
 
 ---
 
 ## same_as
 
-Valida que el campo tenga el mismo valor que otro campo.
+Validates that the field has the same value as another field.
 
 ```python
 from pyvalidx.core import same_as
@@ -111,44 +121,44 @@ from pyvalidx.core import same_as
 class RegistrationModel(ValidatedModel):
     password: str = field_validated(is_required())
     confirm_password: str = field_validated(
-        same_as("password", "Passwords must match")
+        same_as('password', 'Passwords must match')
     )
 
-# Uso
+# Usage
 registration = RegistrationModel(
-    password="mypass123",
-    confirm_password="mypass123"
+    password='mypass123',
+    confirm_password='mypass123'
 )
 ```
 
-### Parámetros
-- `other_field` (str): Nombre del campo a comparar
-- `message` (str, opcional): Mensaje de error personalizado
+### Parameters
+- `other_field` (str): Name of the field to compare
+- `message` (str, optional): Custom error message
 
 ---
 
 ## is_not_empty
 
-Valida que el campo no esté vacío (diferente de `is_required`).
+Validates that the field is not empty (different from `is_required`).
 
 ```python
 from pyvalidx.core import is_not_empty
 
 class TagModel(ValidatedModel):
-    tags: list = field_validated(is_not_empty("Tags list cannot be empty"))
+    tags: list = field_validated(is_not_empty('Tags list cannot be empty'))
 
-# Uso
-tag_model = TagModel(tags=["python", "validation"])
+# Usage
+tag_model = TagModel(tags=['python', 'validation'])
 ```
 
-### Parámetros
-- `message` (str): Mensaje de error si el campo está vacío
+### Parameters
+- `message` (str): Error message if the field is empty
 
 ---
 
 ## required_if
 
-Valida que el campo sea requerido si otro campo tiene un valor específico.
+Validates that the field is required if another field has a specific value.
 
 ```python
 from pyvalidx.core import required_if
@@ -156,38 +166,38 @@ from pyvalidx.core import required_if
 class OrderModel(ValidatedModel):
     payment_method: str = field_validated(is_required())
     card_number: str = field_validated(
-        required_if("payment_method", "credit_card", "Card number required for credit card payments")
+        required_if('payment_method', 'credit_card', 'Card number required for credit card payments')
     )
 
-# Uso
+# Usage
 order = OrderModel(
-    payment_method="credit_card",
-    card_number="1234-5678-9012-3456"
+    payment_method='credit_card',
+    card_number='1234-5678-9012-3456'
 )
 ```
 
-### Parámetros
-- `other_field` (str): Campo que condiciona la validación
-- `other_value` (Any): Valor que hace requerido este campo
-- `message` (str): Mensaje de error personalizado
+### Parameters
+- `other_field` (str): Field that conditions the validation
+- `other_value` (Any): Value that makes this field required
+- `message` (str): Custom error message
 
 ---
 
-## Combinando Validadores
+## Combining Validators
 
-Puedes combinar múltiples validadores core:
+You can combine multiple core validators:
 
 ```python
 class UserProfileModel(ValidatedModel):
     username: str = field_validated(
-        is_required("Username is required"),
-        min_length(3, "Username too short"),
-        max_length(20, "Username too long")
+        is_required('Username is required'),
+        min_length(3, 'Username too short'),
+        max_length(20, 'Username too long')
     )
     bio: str = field_validated(
-        max_length(500, "Bio too long")
+        max_length(500, 'Bio too long')
     )
     website: str = field_validated(
-        required_if("bio", "", "Website required if no bio provided")
+        required_if('bio', '', 'Website required if no bio provided')
     )
 ```

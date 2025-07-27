@@ -1,28 +1,28 @@
-site_name: PyValidX Documentation
+site_name: PyValidX
 site_description: Custom field validation for Python with Pydantic
 site_author: Harrison Alonso Arroyave Gaviria
-site_url: https://harrsion-gaviria.github.io/pyvalidx
+site_url: https://harrison-gaviria.github.io/pyvalidx
 
-repo_name: harrsion-gaviria/pyvalidx
-repo_url: https://github.com/harrsion-gaviria/pyvalidx
+repo_name: harrison-gaviria/pyvalidx
+repo_url: https://github.com/harrison-gaviria/pyvalidx
 
 theme:
   name: material
   palette:
-    # Palette toggle for light mode
-    - scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    # Palette toggle for dark mode
+  # Palette toggle for dark mode
     - scheme: slate
-      primary: blue
-      accent: blue
+      primary: blue grey
+      accent: blue grey
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+    # Palette toggle for light mode
+    - scheme: default
+      primary: blue grey
+      accent: blue grey
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
   features:
     - navigation.tabs
     - navigation.sections
@@ -80,6 +80,7 @@ nav:
     - field_validated: api-reference/field-validated.md
     - ValidationException: api-reference/validation-exception.md
   - Examples:
+    - Overview: examples/README.md
     - User Registration: examples/user-registration.md
     - Form Validation: examples/form-validation.md
     - API Validation: examples/api-validation.md

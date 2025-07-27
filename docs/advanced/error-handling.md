@@ -1,10 +1,10 @@
 # Error Handling
 
-PyValidX proporciona un sistema robusto de manejo de errores a través de la clase `ValidationException`, que permite capturar, procesar y responder a errores de validación de manera estructurada.
+PyValidX provides a robust error handling system through the `ValidationException` class, which allows capturing, processing, and responding to validation errors in a structured way.
 
-## ValidationException Básica
+## Basic ValidationException
 
-### Estructura de Errores
+### Error Structure
 
 ```python
 from pyvalidx import ValidatedModel, field_validated, ValidationException
@@ -13,270 +13,188 @@ from pyvalidx.string import is_email
 
 class UserModel(ValidatedModel):
     name: str = field_validated(
-        is_required("Name is required"),
-        min_length(2, "Name must be at least 2 characters")
+        is_required('Name is required'),
+        min_length(2, 'Name must be at least 2 characters')
     )
     email: str = field_validated(
-        is_required("Email is required"),
-        is_email("Invalid email format")
+        is_required('Email is required'),
+        is_email('Invalid email format')
     )
 
-# Capturar y examinar errores
+# Capture and examine errors
 try:
-    user = UserModel(name="A", email="invalid-email")
+    user = UserModel(name='A', email='invalid-email')
 except ValidationException as e:
-    print("Status Code:", e.status_code)  # 400
-    print("Validations:", e.validations)
+    print('Status Code:', e.status_code)  # 400
+    print('Validations:', e.validations)
     # {'name': 'Name must be at least 2 characters', 'email': 'Invalid email format'}
-    
-    # Obtener como diccionario
+
+    # Get as dictionary
     error_dict = e.to_dict()
-    print("Error Dict:", error_dict)
-    
-    # Obtener como JSON
+    print('Error Dict:', error_dict)
+
+    # Get as JSON
     error_json = e.to_json()
-    print("Error JSON:", error_json)
+    print('Error JSON:', error_json)
 ```
 
-### Múltiples Errores por Campo
+### Multiple Errors per Field
 
 ```python
 class PasswordModel(ValidatedModel):
     password: str = field_validated(
-        is_required("Password is required"),
-        min_length(8, "Password must be at least 8 characters"),
-        is_strong_password("Password must contain uppercase, lowercase, numbers and symbols")
+        is_required('Password is required'),
+        min_length(8, 'Password must be at least 8 characters'),
+        is_strong_password('Password must contain uppercase, lowercase, numbers and symbols')
     )
 
 try:
-    # Password que falla múltiples validaciones
-    pwd_model = PasswordModel(password="123")
+    # Password that fails multiple validations
+    pwd_model = PasswordModel(password='123')
 except ValidationException as e:
     print(e.validations)
     # {'password': 'Password must be at least 8 characters'}
-    # Nota: Solo se reporta el primer error que falla
+    # Note: Only the first failing error is reported
 ```
 
 ---
 
-## Manejo Personalizado de Errores
+## Custom Error Handling
 
 ### Custom Status Codes
 
 ```python
 class ValidationException(Exception):
     def __init__(self, validations, status_code=400):
-        # El status_code por defecto es 400, pero se puede personalizar
+        # Default status_code is 400, but can be customized
         pass
 
-# Para crear errores con códigos específicos
+# To create errors with specific codes
 def validate_admin_user(data):
     try:
         return AdminUserModel(**data)
     except ValidationException as e:
-        # Re-lanzar con código 403 para errores de autorización
-        if "admin_key" in e.validations:
+        # Re-raise with 403 code for authorization errors
+        if 'admin_key' in e.validations:
             raise ValidationException(e.validations, status_code=403)
-        raise  # Re-lanzar con código original
+        raise  # Re-raise with original code
 ```
 
-### Wrapper para Manejo de Errores
+### Error Handling Wrapper
 
 ```python
 from typing import Dict, Any, Tuple, Optional
 import json
 
 class ValidationErrorHandler:
-    """Manejador centralizado de errores de validación"""
-    
+    '''
+    Centralized validation error handler
+    '''
+
     @staticmethod
     def handle_validation_error(e: ValidationException) -> Dict[str, Any]:
-        """Convierte ValidationException a formato estándar de respuesta"""
+        '''
+        Converts ValidationException to standard response format
+
+        Args:
+            e (ValidationException): ValidationException to handle
+
+        Returns:
+            Dict[str, Any]: Standard response format
+        '''
         return {
-            "success": False,
-            "status_code": e.status_code,
-            "message": "Validation failed",
-            "errors": e.validations,
-            "error_count": len(e.validations)
+            'success': False,
+            'status_code': e.status_code,
+            'message': 'Validation failed',
+            'errors': e.validations,
+            'error_count': len(e.validations)
         }
-    
+
     @staticmethod
     def safe_validate(model_class, data: Dict[str, Any]) -> Tuple[Optional[Any], Optional[Dict[str, Any]]]:
-        """Validación segura que retorna tupla (modelo, error)"""
+        '''
+        Safe validation that returns tuple (model, error)
+
+        Args:
+            model_class (type): Model class to validate
+            data (Dict[str, Any]): Data to validate
+
+        Returns:
+            Tuple[Optional[Any], Optional[Dict[str, Any]]]: Tuple of (model, error)
+        '''
         try:
             model = model_class(**data)
             return model, None
         except ValidationException as e:
             return None, ValidationErrorHandler.handle_validation_error(e)
-    
-    @staticmethod
-    def validate_or_raise_http_error(model_class, data: Dict[str, Any]):
-        """Para uso en APIs web - convierte a formato HTTP"""
-        try:
-            return model_class(**data)
-        except ValidationException as e:
-            # Formato compatible con FastAPI/Flask
-            http_error = {
-                "detail": e.validations,
-                "status_code": e.status_code
-            }
-            raise HTTPException(
-                status_code=e.status_code,
-                detail=http_error["detail"]
-            )
-
-# Uso del handler
-class UserRegistrationModel(ValidatedModel):
-    username: str = field_validated(is_required(), min_length(3))
-    email: str = field_validated(is_required(), is_email())
-
-# Validación segura
-user_data = {"username": "ab", "email": "invalid"}
-user, error = ValidationErrorHandler.safe_validate(UserRegistrationModel, user_data)
-
-if error:
-    print(json.dumps(error, indent=2))
-    # {
-    #   "success": false,
-    #   "status_code": 400,
-    #   "message": "Validation failed",
-    #   "errors": {
-    #     "username": "Must have at least 3 characters",
-    #     "email": "Invalid email format"
-    #   },
-    #   "error_count": 2
-    # }
 ```
 
 ---
 
-## Errores Contextuales y Debugging
+## Contextual Errors and Debugging
 
-### Información de Debug en Errores
+### Debug Information in Errors
 
 ```python
 class DebugValidationException(ValidationException):
-    """ValidationException extendida con información de debug"""
-    
+    '''
+    Extended ValidationException with debug information
+    '''
+
     def __init__(self, validations, status_code=400, debug_info=None):
         super().__init__(validations, status_code)
         self.debug_info = debug_info or {}
-    
-    def to_dict(self):
+
+    def to_dict(self) -> Dict[str, Any]:
+        '''
+        Converts exception to dictionary including debug info
+
+        Returns:
+            Dict[str, Any]: Dictionary representation of the exception including debug info
+        '''
         result = super().to_dict()
         if self.debug_info:
-            result["debug_info"] = self.debug_info
+            result['debug_info'] = self.debug_info
         return result
-
-def debug_validator(validator_func, field_name="unknown"):
-    """Wrapper que añade información de debug a validadores"""
-    def wrapper(value, context=None):
-        import time
-        start_time = time.time()
-        
-        try:
-            result = validator_func(value, context)
-            end_time = time.time()
-            
-            # Información de debug
-            debug_info = {
-                "field_name": field_name,
-                "validation_time_ms": round((end_time - start_time) * 1000, 2),
-                "input_value": str(value)[:100],  # Primeros 100 caracteres
-                "context_keys": list(context.keys()) if context else []
-            }
-            
-            if not result:
-                # Si la validación falla, incluir debug info
-                wrapper.__debug_info__ = debug_info
-            
-            return result
-            
-        except Exception as e:
-            end_time = time.time()
-            debug_info = {
-                "field_name": field_name,
-                "validation_time_ms": round((end_time - start_time) * 1000, 2),
-                "exception": str(e),
-                "input_value": str(value)[:100]
-            }
-            wrapper.__debug_info__ = debug_info
-            return False
-    
-    wrapper.__message__ = getattr(validator_func, '__message__', 'Validation failed')
-    return wrapper
-
-# Modelo con debug
-class DebugUserModel(ValidatedModel):
-    email: str = field_validated(
-        custom(debug_validator(is_email(), "email"))
-    )
 ```
 
-### Logging de Errores de Validación
+### Validation Error Logging
 
 ```python
 import logging
 from datetime import datetime
 
 class ValidationLogger:
-    """Logger especializado para errores de validación"""
-    
-    def __init__(self, logger_name="pyvalidx"):
-        self.logger = logging.getLogger(logger_name)
-        self.logger.setLevel(logging.INFO)
-        
-        if not self.logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
-    
-    def log_validation_error(self, model_class, data, exception: ValidationException):
-        """Log detallado de errores de validación"""
-        self.logger.error(
-            f"Validation failed for {model_class.__name__}: "
-            f"Fields with errors: {list(exception.validations.keys())}"
-        )
-        
-        for field, error in exception.validations.items():
-            self.logger.error(f"  {field}: {error}")
-        
-        # Log de datos de entrada (sin información sensible)
-        safe_data = self._sanitize_data(data)
-        self.logger.debug(f"Input data: {safe_data}")
-    
-    def _sanitize_data(self, data):
-        """Remover información sensible de los logs"""
-        sensitive_fields = {'password', 'card_number', 'ssn', 'api_key'}
-        
-        sanitized = {}
-        for key, value in data.items():
-            if key.lower() in sensitive_fields:
-                sanitized[key] = "***REDACTED***"
-            else:
-                sanitized[key] = str(value)[:100]  # Truncar valores largos
-        
-        return sanitized
+    '''
+    Logger for validation errors
+    '''
 
-# Uso del logger
-validation_logger = ValidationLogger()
+    def __init__(self):
+        self.logger = logging.getLogger('pyvalidx.validation')
 
-def safe_create_user(user_data):
-    try:
-        return UserModel(**user_data)
-    except ValidationException as e:
-        validation_logger.log_validation_error(UserModel, user_data, e)
-        raise  # Re-lanzar después de loggear
+    def log_validation_error(self, model_name: str, errors: dict, context: dict = None):
+        '''
+        Log validation errors with context
+
+        Args:
+            model_name (str): Name of the model
+            errors (dict): Validation errors
+            context (dict, optional): Additional context for logging
+        '''
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'model': model_name,
+            'errors': errors,
+            'context': context or {}
+        }
+        self.logger.error(f'Validation failed: {log_entry}')
 ```
 
 ---
 
-## Manejo de Errores en Aplicaciones Web
+## Error Handling in Web Applications
 
-### Integración con FastAPI
+### FastAPI Integration
 
 ```python
 from fastapi import FastAPI, HTTPException
@@ -286,28 +204,37 @@ import uvicorn
 app = FastAPI()
 
 @app.exception_handler(ValidationException)
-async def validation_exception_handler(request, exc: ValidationException):
-    """Handler global para ValidationException en FastAPI"""
+async def validation_exception_handler(request, exc: ValidationException) -> JSONResponse:
+    '''
+    Global handler for ValidationException in FastAPI
+
+    Args:
+        request (Request): FastAPI request object
+        exc (ValidationException): ValidationException to handle
+
+    Returns:
+        JSONResponse: JSON response with error details
+    '''
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "message": "Validation failed",
-            "errors": exc.validations,
-            "status_code": exc.status_code
+            'message': 'Validation failed',
+            'errors': exc.validations,
+            'status_code': exc.status_code
         }
     )
 
-@app.post("/users/")
+@app.post('/users/')
 async def create_user(user_data: dict):
-    # La ValidationException será capturada automáticamente
+    # ValidationException will be caught automatically
     user = UserModel(**user_data)
-    return {"message": "User created", "user": user.model_dump()}
+    return {'message': 'User created', 'user': user.model_dump()}
 
-# Uso:
-# POST /users/ con datos inválidos retornará automáticamente error 400
+# Usage:
+# POST /users/ with invalid data will automatically return 400 error
 ```
 
-### Integración con Flask
+### Flask Integration
 
 ```python
 from flask import Flask, request, jsonify
@@ -315,139 +242,154 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 @app.errorhandler(ValidationException)
-def handle_validation_error(e):
-    """Handler global para ValidationException en Flask"""
+def handle_validation_error(e) -> tuple[dict, int]:
+    '''
+    Global handler for ValidationException in Flask
+
+    Args:
+        e (ValidationException): ValidationException to handle
+
+    Returns:
+        tuple: Tuple of (response, status_code)
+    '''
     return jsonify(e.to_dict()), e.status_code
 
 @app.route('/users', methods=['POST'])
 def create_user():
     user_data = request.get_json()
-    
-    # La ValidationException será capturada automáticamente
-    user = UserModel(**user_data)
-    return jsonify({"message": "User created", "user": user.model_dump()})
 
-# Uso:
-# POST /users con datos inválidos retornará automáticamente error 400
+    # ValidationException will be caught automatically
+    user = UserModel(**user_data)
+    return jsonify({'message': 'User created', 'user': user.model_dump()})
+
+# Usage:
+# POST /users with invalid data will automatically return 400 error
 ```
 
 ---
 
-## Patrones Avanzados de Manejo de Errores
+## Advanced Error Handling Patterns
 
-### Acumulación de Errores de Múltiples Modelos
+### Error Accumulation from Multiple Models
 
 ```python
 class BatchValidationResult:
-    """Resultado de validación por lotes"""
-    
-    def __init__(self):
-        self.valid_items = []
-        self.invalid_items = []
-        self.error_summary = {}
-    
-    def add_valid(self, index, item):
-        self.valid_items.append({"index": index, "item": item})
-    
-    def add_invalid(self, index, data, errors):
-        self.invalid_items.append({
-            "index": index,
-            "data": data,
-            "errors": errors
-        })
-        
-        # Acumular errores por campo
-        for field, error in errors.items():
-            if field not in self.error_summary:
-                self.error_summary[field] = []
-            self.error_summary[field].append(f"Row {index}: {error}")
-    
-    @property
-    def has_errors(self):
-        return len(self.invalid_items) > 0
-    
-    def to_dict(self):
-        return {
-            "valid_count": len(self.valid_items),
-            "invalid_count": len(self.invalid_items),
-            "valid_items": self.valid_items,
-            "invalid_items": self.invalid_items,
-            "error_summary": self.error_summary
-        }
+    '''
+    Result container for batch validation
+    '''
 
-def batch_validate(model_class, data_list):
-    """Validar una lista de elementos y acumular errores"""
+    def __init__(self):
+        self.valid_models = []
+        self.invalid_models = []
+        self.errors = {}
+
+    @property
+    def valid_count(self) -> int:
+        return len(self.valid_models)
+
+    @property
+    def invalid_count(self) -> int:
+        return len(self.invalid_models)
+
+def batch_validate(model_class, data_list: list) -> BatchValidationResult:
+    '''
+    Validate multiple instances and collect all errors
+
+    Args:
+        model_class (type): Model class to validate
+        data_list (list): List of data to validate
+
+    Returns:
+        BatchValidationResult: Result container with validation results
+    '''
     result = BatchValidationResult()
-    
-    for index, data in enumerate(data_list):
+
+    for i, data in enumerate(data_list):
         try:
-            item = model_class(**data)
-            result.add_valid(index, item.model_dump())
+            model = model_class(**data)
+            result.valid_models.append(model)
         except ValidationException as e:
-            result.add_invalid(index, data, e.validations)
-    
+            result.invalid_models.append(data)
+            result.errors[f"item_{i}"] = e.validations
+
     return result
 
-# Uso
+# Usage
 users_data = [
-    {"name": "John", "email": "john@example.com"},
-    {"name": "A", "email": "invalid"},  # Error
-    {"name": "Jane", "email": "jane@example.com"},
-    {"name": "", "email": ""}  # Error
+    {'name': 'John', 'email': 'john@example.com'},
+    {'name': 'A', 'email': 'invalid-email'},
+    {'name': 'Jane', 'email': 'jane@example.com'}
 ]
 
 batch_result = batch_validate(UserModel, users_data)
-print(f"Valid: {batch_result.valid_count}, Invalid: {batch_result.invalid_count}")
+print(f'Valid: {batch_result.valid_count}, Invalid: {batch_result.invalid_count}')
 ```
 
-### Retry con Backoff para Validaciones Externas
+### Retry with Backoff for External Validations
 
 ```python
 import time
 import random
+from functools import wraps
 
-def retry_validation(max_retries=3, backoff_factor=2):
-    """Decorator para reintentar validaciones que dependen de servicios externos"""
+def retry_validation(max_retries=3, backoff_factor=1.0) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Decorator for retrying validations with exponential backoff
+
+    Args:
+        max_retries (int, optional): Maximum number of retries. Defaults to 3.
+        backoff_factor (float, optional): Backoff factor for exponential backoff. Defaults to 1.0.
+
+    Returns:
+        Callable: Decorated validator function
+    '''
     def decorator(validator_func):
+        @wraps(validator_func)
         def wrapper(value, context=None):
             last_exception = None
-            
-            for attempt in range(max_retries):
+
+            for attempt in range(max_retries + 1):
                 try:
                     return validator_func(value, context)
                 except Exception as e:
                     last_exception = e
-                    if attempt < max_retries - 1:
-                        delay = backoff_factor ** attempt + random.uniform(0, 1)
+                    if attempt < max_retries:
+                        delay = backoff_factor * (2 ** attempt) + random.uniform(0, 1)
                         time.sleep(delay)
-                    continue
-            
-            # Si todos los intentos fallan, retornar False
-            return False
-        
-        wrapper.__message__ = getattr(validator_func, '__message__', 'Validation failed')
+                    else:
+                        raise last_exception
+
         return wrapper
     return decorator
 
-# Validador que consulta servicio externo con retry
+# Validator that queries external service with retry
 @retry_validation(max_retries=3)
-def validate_with_external_service(value, context=None):
-    """Ejemplo de validador que consulta un servicio externo"""
+def validate_with_external_service(value, context=None) -> bool:
+    '''
+    Example validator that queries an external service
+
+    Args:
+        value (Any): Value to validate
+        context (Dict[str, Any], optional): Context containing other field values
+
+    Returns:
+        bool: True if validation passes, False otherwise
+    '''
     if value is None:
         return True
-    
-    # Simular llamada a servicio externo que puede fallar
+
+    # Simulate external service call that may fail
     import requests
     try:
-        response = requests.get(f"https://api.example.com/validate/{value}", timeout=5)
+        response = requests.get(f'https://api.example.com/validate/{value}', timeout=5)
         return response.status_code == 200
     except requests.RequestException:
-        raise  # Se reintentará automáticamente
+        raise  # Will be retried automatically
 
 class ExternalValidatedModel(ValidatedModel):
     external_id: str = field_validated(
-        custom(validate_with_external_service, "External validation failed")
+        custom(validate_with_external_service, 'External validation failed')
     )
 ```
 
-El manejo robusto de errores es crucial para crear aplicaciones confiables que puedan diagnosticar y responder apropiadamente a problemas de validación, proporcionando información útil tanto para desarrolladores como para usuarios finales.
+The robust handling of errors is crucial for creating reliable applications that can diagnose and respond appropriately to validation problems, providing useful information for both developers and end-users.

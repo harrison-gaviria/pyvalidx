@@ -1,10 +1,10 @@
 # Conditional Validation
 
-La validación condicional permite aplicar reglas de validación basadas en los valores de otros campos o condiciones específicas del contexto.
+Conditional validation allows applying validation rules based on the values of other fields or specific context conditions.
 
-## required_if Básico
+## Basic required_if
 
-El validador `required_if` es la forma más simple de validación condicional:
+The `required_if` validator is the simplest form of conditional validation:
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -12,286 +12,204 @@ from pyvalidx.core import required_if, is_required
 
 class PaymentModel(ValidatedModel):
     payment_method: str = field_validated(
-        is_required("Payment method is required")
+        is_required('Payment method is required')
     )
-    
-    # Solo requerido si payment_method es "credit_card"
+
+    # Only required if payment_method is 'credit_card'
     card_number: str = field_validated(
-        required_if("payment_method", "credit_card", "Card number required for credit card payments")
+        required_if('payment_method', 'credit_card', 'Card number required for credit card payments')
     )
-    
-    # Solo requerido si payment_method es "bank_transfer"
+
+    # Only required if payment_method is 'bank_transfer'
     bank_account: str = field_validated(
-        required_if("payment_method", "bank_transfer", "Bank account required for transfers")
+        required_if('payment_method', 'bank_transfer', 'Bank account required for transfers')
     )
 
-# Uso válido - Tarjeta de crédito
+# Valid usage - Credit card
 payment1 = PaymentModel(
-    payment_method="credit_card",
-    card_number="1234-5678-9012-3456"
+    payment_method='credit_card',
+    card_number='1234-5678-9012-3456'
 )
 
-# Uso válido - Transferencia bancaria
+# Valid usage - Bank transfer
 payment2 = PaymentModel(
-    payment_method="bank_transfer",
-    bank_account="123456789"
+    payment_method='bank_transfer',
+    bank_account='123456789'
 )
 
-# Uso válido - Efectivo (no requiere campos adicionales)
-payment3 = PaymentModel(payment_method="cash")
+# Valid usage - Cash (no additional fields required)
+payment3 = PaymentModel(payment_method='cash')
 ```
 
 ---
 
-## Validación Condicional Personalizada
+## Custom Conditional Validation
 
-### Múltiples Condiciones
+### Multiple Conditions
 
 ```python
 from pyvalidx.core import custom
 
-def required_if_multiple(field_conditions: dict, message: str = "Field is required"):
-    """
-    Validador que requiere el campo si múltiples condiciones se cumplen
-    field_conditions: dict con formato {"field_name": "expected_value"}
-    """
+def required_if_multiple(conditions: dict, message: str):
+    '''Validator that requires field if multiple conditions are met'''
     def validator(value, context=None):
         if context is None:
             return True
-        
-        # Verificar si todas las condiciones se cumplen
-        conditions_met = all(
-            context.get(field) == expected_value 
-            for field, expected_value in field_conditions.items()
+
+        # Check if all conditions are met
+        all_conditions_met = all(
+            context.get(field) == expected_value
+            for field, expected_value in conditions.items()
         )
-        
-        if conditions_met:
-            # Si las condiciones se cumplen, el campo es requerido
-            return value is not None and value != ''
-        
-        # Si las condiciones no se cumplen, el campo es opcional
+
+        if all_conditions_met:
+            return value is not None and str(value).strip() != ''
         return True
-    
+
     validator.__message__ = message
     return validator
 
 class ShippingModel(ValidatedModel):
     country: str = field_validated(is_required())
     shipping_method: str = field_validated(is_required())
-    
-    # Solo requerido si country="US" Y shipping_method="express"
+
+    # Only required if country='US' AND shipping_method='express'
     signature_required: bool = field_validated(
         custom(
             required_if_multiple(
-                {"country": "US", "shipping_method": "express"},
-                "Signature is required for express shipping in US"
+                {'country': 'US', 'shipping_method': 'express'},
+                'Signature is required for express shipping in US'
             )
         )
     )
 
-# Uso
+# Usage
 shipping = ShippingModel(
-    country="US",
-    shipping_method="express",
+    country='US',
+    shipping_method='express',
     signature_required=True
 )
 ```
 
-### Validación Basada en Rangos
+### Conditional Format Validation
 
 ```python
-def required_if_range(field_name: str, min_val, max_val, message: str = "Field is required"):
-    """Requiere el campo si otro campo está en un rango específico"""
-    def validator(value, context=None):
-        if context is None:
-            return True
-        
-        other_value = context.get(field_name)
-        if other_value is None:
-            return True
-        
-        try:
-            other_numeric = float(other_value)
-            if min_val <= other_numeric <= max_val:
-                return value is not None and value != ''
-            return True
-        except (ValueError, TypeError):
-            return True
-    
-    validator.__message__ = message
-    return validator
+def conditional_format_validator(condition_field: str, condition_value: str, pattern: str, message: str) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Validates format only when condition is met
 
-class InsuranceModel(ValidatedModel):
-    age: int = field_validated(is_required())
-    coverage_type: str = field_validated(is_required())
-    
-    # Solo requerido si la edad está entre 65 y 100 años
-    medical_certificate: str = field_validated(
-        custom(
-            required_if_range("age", 65, 100, "Medical certificate required for seniors"),
-        )
-    )
+    Args:
+        condition_field (str): Field to check for condition
+        condition_value (str): Value that makes format validation active
+        pattern (str): Regex pattern to validate against
+        message (str): Error message if validation fails
 
-# Uso
-insurance = InsuranceModel(
-    age=70,
-    coverage_type="comprehensive",
-    medical_certificate="cert_123456.pdf"
-)
-```
-
----
-
-## Validación Condicional Compleja
-
-### Validación Basada en Listas
-
-```python
-def required_if_contains(field_name: str, search_values: list, message: str = "Field is required"):
-    """Requiere el campo si otro campo (lista) contiene alguno de los valores especificados"""
-    def validator(value, context=None):
-        if context is None:
-            return True
-        
-        other_value = context.get(field_name, [])
-        if not isinstance(other_value, list):
-            return True
-        
-        # Si la lista contiene alguno de los valores buscados, el campo es requerido
-        if any(item in other_value for item in search_values):
-            return value is not None and value != ''
-        
-        return True
-    
-    validator.__message__ = message
-    return validator
-
-class EventModel(ValidatedModel):
-    event_type: str = field_validated(is_required())
-    features: list = field_validated(is_required())
-    
-    # Solo requerido si features contiene "catering" o "bar"
-    catering_details: str = field_validated(
-        custom(
-            required_if_contains("features", ["catering", "bar"], "Catering details required"),
-        )
-    )
-
-# Uso
-event = EventModel(
-    event_type="wedding",
-    features=["music", "catering", "photography"],
-    catering_details="Vegetarian menu for 100 guests"
-)
-```
-
-### Validación Jerárquica
-
-```python
-def conditional_format_validator(condition_field: str, condition_value, format_pattern: str, message: str):
-    """Valida formato solo si se cumple una condición"""
-    import re
-    
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Validator function
+    '''
     def validator(value, context=None):
         if context is None or value is None:
             return True
-        
-        # Si la condición no se cumple, no validar formato
-        if context.get(condition_field) != condition_value:
-            return True
-        
-        # Si la condición se cumple, validar formato
-        return re.match(format_pattern, str(value)) is not None
-    
+
+        if context.get(condition_field) == condition_value:
+            import re
+            return bool(re.match(pattern, str(value)))
+        return True
+
     validator.__message__ = message
     return validator
 
 class ContactModel(ValidatedModel):
     contact_type: str = field_validated(is_required())
     contact_value: str = field_validated(is_required())
-    
-    # Validar formato de email solo si contact_type es "email"
+
+    # Validate email format only if contact_type is "email"
     formatted_contact: str = field_validated(
         custom(
             conditional_format_validator(
-                "contact_type", 
-                "email", 
-                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,},
-                "Invalid email format"
+                'contact_type',
+                'email',
+                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                'Invalid email format'
             )
         )
     )
 
-# Uso
+# Usage
 contact = ContactModel(
-    contact_type="email",
-    contact_value="user@example.com",
-    formatted_contact="user@example.com"
+    contact_type='email',
+    contact_value='user@example.com',
+    formatted_contact='user@example.com'
 )
 ```
 
 ---
 
-## Validación Condicional con Lógica de Negocio
+## Conditional Validation with Business Logic
 
-### Sistema de Descuentos
+### Discount System
 
 ```python
-def discount_validation(value, context=None):
-    """Valida descuentos basado en reglas de negocio"""
+def discount_validation(value, context=None) -> bool:
+    '''
+    Validates discount based on customer type and order amount
+
+    Args:
+        value (Any): Discount value to validate
+        context (Dict[str, Any], optional): Context containing customer_type and order_amount
+
+    Returns:
+        bool: True if discount is valid, False otherwise
+    '''
     if value is None or context is None:
         return True
-    
+
     customer_type = context.get('customer_type')
     order_amount = context.get('order_amount', 0)
     discount = float(value)
-    
-    # Reglas de descuento por tipo de cliente
-    max_discounts = {
-        'regular': 10,      # 10% máximo
-        'premium': 20,      # 20% máximo
-        'vip': 30,         # 30% máximo
-        'employee': 50      # 50% máximo
-    }
-    
-    max_discount = max_discounts.get(customer_type, 0)
-    
-    # Validar que el descuento no exceda el máximo permitido
-    if discount > max_discount:
+
+    # Business rules for discounts
+    if customer_type == 'regular':
+        max_discount = 10 if order_amount >= 100 else 5
+    elif customer_type == 'premium':
+        max_discount = 20 if order_amount >= 100 else 15
+    elif customer_type == 'vip':
+        max_discount = 30
+    elif customer_type == 'employee':
+        max_discount = 50
+    else:
         return False
-    
-    # Descuentos mayores al 15% requieren orden mínima de $100
-    if discount > 15 and order_amount < 100:
-        return False
-    
-    return True
+
+    return 0 <= discount <= max_discount
+
+discount_validation.__message__ = 'Invalid discount for customer type or order amount'
 
 class OrderModel(ValidatedModel):
     customer_type: str = field_validated(
         is_required(),
-        is_in(["regular", "premium", "vip", "employee"])
+        is_in(['regular', 'premium', 'vip', 'employee'])
     )
-    
+
     order_amount: float = field_validated(
         is_required(),
         is_positive()
     )
-    
+
     discount_percentage: float = field_validated(
-        custom(discount_validation, "Invalid discount for customer type or order amount")
+        custom(discount_validation, 'Invalid discount for customer type or order amount')
     )
 
-# Uso válido
+# Valid usage
 order = OrderModel(
-    customer_type="premium",
+    customer_type='premium',
     order_amount=150.0,
     discount_percentage=18.0
 )
 
-# Uso inválido - descuento muy alto para cliente regular
+# Invalid usage - discount too high for regular customer
 try:
     invalid_order = OrderModel(
-        customer_type="regular",
+        customer_type='regular',
         order_amount=50.0,
         discount_percentage=25.0
     )
@@ -299,265 +217,212 @@ except ValidationException as e:
     print(e.validations)
 ```
 
-### Validación de Fechas Relacionadas
-
-```python
-from datetime import datetime
-
-def end_date_after_start(value, context=None):
-    """Valida que end_date sea posterior a start_date"""
-    if value is None or context is None:
-        return True
-    
-    start_date_str = context.get('start_date')
-    if not start_date_str:
-        return True
-    
-    try:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        end_date = datetime.strptime(str(value), "%Y-%m-%d")
-        return end_date > start_date
-    except ValueError:
-        return False
-
-def reservation_duration_valid(value, context=None):
-    """Valida que la duración de la reserva sea válida según el tipo"""
-    if value is None or context is None:
-        return True
-    
-    reservation_type = context.get('reservation_type')
-    start_date_str = context.get('start_date')
-    
-    if not start_date_str or not reservation_type:
-        return True
-    
-    try:
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        end_date = datetime.strptime(str(value), "%Y-%m-%d")
-        duration_days = (end_date - start_date).days
-        
-        # Reglas de duración por tipo de reserva
-        max_durations = {
-            'hourly': 1,        # Máximo 1 día
-            'daily': 30,        # Máximo 30 días
-            'weekly': 90,       # Máximo 90 días  
-            'monthly': 365      # Máximo 365 días
-        }
-        
-        max_duration = max_durations.get(reservation_type, 30)
-        return duration_days <= max_duration
-        
-    except ValueError:
-        return False
-
-class ReservationModel(ValidatedModel):
-    reservation_type: str = field_validated(
-        is_required(),
-        is_in(["hourly", "daily", "weekly", "monthly"])
-    )
-    
-    start_date: str = field_validated(
-        is_required(),
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d")
-    )
-    
-    end_date: str = field_validated(
-        is_required(),
-        is_date("%Y-%m-%d"),
-        custom(end_date_after_start, "End date must be after start date"),
-        custom(reservation_duration_valid, "Reservation duration exceeds maximum for this type")
-    )
-
-# Uso
-from datetime import timedelta
-
-tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-next_week = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-
-reservation = ReservationModel(
-    reservation_type="daily",
-    start_date=tomorrow,
-    end_date=next_week
-)
-```
-
 ---
 
-## Patrones Avanzados de Validación Condicional
+## Advanced Conditional Validation Patterns
 
-### Validación en Cascada
+### Cascade Validation
 
 ```python
+def conditional_requirement(condition_func: Callable[[Dict[str, Any]], bool], message: str) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Generic conditional requirement validator
+
+    Args:
+        condition_func (Callable[[Dict[str, Any]], bool]): Function that takes context and returns True if condition is met
+        message (str): Error message if validation fails
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Validator function
+    '''
+    def validator(value, context=None):
+        if condition_func(context):
+            return value is not None and str(value).strip() != ''
+        return True
+
+    validator.__message__ = message
+    return validator
+
 class EmployeeModel(ValidatedModel):
     employee_type: str = field_validated(
         is_required(),
-        is_in(["full_time", "part_time", "contractor", "intern"])
+        is_in(['full_time', 'part_time', 'contractor', 'intern'])
     )
-    
-    # Solo para empleados de tiempo completo y medio tiempo
+
+    # Only for full-time and part-time employees
     benefits_eligible: bool = field_validated(
         custom(
             required_if_multiple(
-                {"employee_type": "full_time"}, 
-                "Benefits eligibility required for full-time employees"
+                {'employee_type': 'full_time'},
+                'Benefits eligibility required for full-time employees'
             )
         )
     )
-    
-    # Solo si es elegible para beneficios
+
+    # Only if eligible for benefits
     health_plan: str = field_validated(
         custom(
             conditional_requirement(
                 lambda ctx: ctx.get('benefits_eligible') == True,
-                "Health plan selection required for benefits-eligible employees"
+                'Health plan selection required for benefits-eligible employees'
             )
         )
     )
-    
-    # Solo para contratistas
-    contract_end_date: str = field_validated(
-        custom(
-            required_if("employee_type", "contractor", "Contract end date required for contractors"),
-        ),
-        is_date("%Y-%m-%d"),
-        is_future_date("%Y-%m-%d")
-    )
-
-def conditional_requirement(condition_func, message):
-    """Factory para crear validadores con condiciones lambda"""
-    def validator(value, context=None):
-        if context is None:
-            return True
-        
-        if condition_func(context):
-            return value is not None and value != ''
-        return True
-    
-    validator.__message__ = message
-    return validator
 ```
 
-### Validación de Grupos de Campos
+### At Least One Required
 
 ```python
-def at_least_one_required(field_names: list, message: str = "At least one field is required"):
-    """Valida que al menos uno de los campos especificados tenga valor"""
+def at_least_one_required(fields: list, message: str) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Validates that at least one of the specified fields has a value
+
+    Args:
+        fields (list): List of field names to check
+        message (str): Error message if validation fails
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Validator function
+    '''
     def validator(value, context=None):
         if context is None:
             return True
-        
-        # Verificar si al menos uno de los campos tiene valor
+
+        # Check if at least one field has a value
         has_value = any(
-            context.get(field_name) is not None and context.get(field_name) != ''
-            for field_name in field_names
+            context.get(field) is not None and str(context.get(field)).strip() != ''
+            for field in fields
         )
-        
+
         return has_value
-    
+
     validator.__message__ = message
     return validator
 
 class ContactFormModel(ValidatedModel):
     name: str = field_validated(is_required())
-    
-    # Al menos uno de estos debe estar presente
+
+    # At least one of these must be present
     email: str = field_validated(
         custom(
-            at_least_one_required(['email', 'phone'], "Either email or phone is required")
+            at_least_one_required(['email', 'phone'], 'Either email or phone is required')
         ),
         is_email()
     )
-    
+
     phone: str = field_validated(
         custom(
-            at_least_one_required(['email', 'phone'], "Either email or phone is required")
+            at_least_one_required(['email', 'phone'], 'Either email or phone is required')
         ),
         is_phone()
     )
 
-# Uso válido - solo email
+# Valid usage - email only
 contact1 = ContactFormModel(
-    name="John Doe",
-    email="john@example.com"
+    name='John Doe',
+    email='john@example.com'
 )
 
-# Uso válido - solo teléfono  
+# Valid usage - phone only
 contact2 = ContactFormModel(
-    name="Jane Doe",
-    phone="3001234567"
+    name='Jane Doe',
+    phone='3001234567'
 )
 
-# Uso válido - ambos
+# Valid usage - both
 contact3 = ContactFormModel(
-    name="Bob Smith",
-    email="bob@example.com",
-    phone="3009876543"
+    name='Bob Smith',
+    email='bob@example.com',
+    phone='3009876543'
 )
 ```
 
----
-
-## Debugging y Testing de Validación Condicional
-
-### Logging de Validaciones Condicionales
+### Debug and Development Tools
 
 ```python
-import logging
+def debug_conditional_validator(validator_func: Callable[[Any, Optional[Dict[str, Any]]], bool], debug_name: str) -> Callable[[Any, Optional[Dict[str, Any]]], bool]:
+    '''
+    Wrapper that adds debug information to conditional validators
 
-def debug_conditional_validator(validator_func, validator_name="custom"):
-    """Wrapper para debuggear validadores condicionales"""
+    Args:
+        validator_func (Callable[[Any, Optional[Dict[str, Any]]], bool]): Validator function to wrap
+        debug_name (str): Name for debugging purposes
+
+    Returns:
+        Callable[[Any, Optional[Dict[str, Any]]], bool]: Wrapped validator function
+    '''
     def wrapper(value, context=None):
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Validating {validator_name}: value={value}, context={context}")
-        
-        result = validator_func(value, context)
-        
-        logger.debug(f"Validation {validator_name} result: {result}")
-        return result
-    
+        import time
+        start_time = time.time()
+
+        try:
+            result = validator_func(value, context)
+            end_time = time.time()
+
+            if hasattr(wrapper, '__debug_mode__') and wrapper.__debug_mode__:
+                print(f'[DEBUG] {debug_name}: {result} (took {(end_time - start_time)*1000:.2f}ms)')
+
+            return result
+        except Exception as e:
+            end_time = time.time()
+            debug_info = {
+                'validator_name': debug_name,
+                'validation_time_ms': round((end_time - start_time) * 1000, 2),
+                'exception': str(e),
+                'input_value': str(value)[:100],
+                'context': str(context)[:200] if context else None
+            }
+            wrapper.__debug_info__ = debug_info
+            return False
+
     wrapper.__message__ = getattr(validator_func, '__message__', 'Validation failed')
     return wrapper
 
-# Uso en desarrollo
+# Usage in development
 class DebugModel(ValidatedModel):
     field1: str = field_validated(is_required())
     field2: str = field_validated(
         custom(
             debug_conditional_validator(
-                required_if("field1", "special_value"),
-                "required_if_debug"
+                required_if('field1', 'special_value'),
+                'required_if_debug'
             )
         )
     )
 ```
 
-### Testing Sistemático
+### Systematic Testing
 
 ```python
 import pytest
 
-def test_conditional_validation():
-    """Test exhaustivo de validación condicional"""
-    
-    # Caso 1: Condición no se cumple, campo opcional
-    model1 = PaymentModel(payment_method="cash")
-    assert model1.payment_method == "cash"
-    
-    # Caso 2: Condición se cumple, campo requerido y presente
+def test_conditional_validation() -> None:
+    '''
+    Comprehensive test for conditional validation
+
+    1. Condition not met, field optional
+    2. Condition met, required field present
+    3. Condition met, required field missing
+    '''
+
+    # Case 1: Condition not met, field optional
+    model1 = PaymentModel(payment_method='cash')
+    assert model1.payment_method == 'cash'
+
+    # Case 2: Condition met, required field present
     model2 = PaymentModel(
-        payment_method="credit_card", 
-        card_number="1234-5678-9012-3456"
+        payment_method='credit_card',
+        card_number='1234-5678-9012-3456'
     )
     assert model2.card_number is not None
-    
-    # Caso 3: Condición se cumple, campo requerido pero ausente
-    with pytest.raises(ValidationException) as exc_info:
-        PaymentModel(payment_method="credit_card")
-    
-    assert "card_number" in exc_info.value.validations
 
-# Ejecutar: pytest test_conditional.py -v
+    # Case 3: Condition met, required field missing
+    with pytest.raises(ValidationException) as exc_info:
+        PaymentModel(payment_method='credit_card')
+
+    assert 'card_number' in exc_info.value.validations
+
+# Run: pytest test_conditional.py -v
 ```
 
-La validación condicional es una herramienta poderosa que permite crear reglas de negocio complejas y flexibles, adaptándose a diferentes escenarios según el contexto de los datos.
+Conditional validation is a powerful tool that allows creating complex and flexible business rules, adapting to different scenarios based on data context.

@@ -1,10 +1,10 @@
 # Type Validators
 
-Los validadores de tipo proporcionan funcionalidades para validar tipos de datos específicos y valores dentro de conjuntos predefinidos.
+Type validators provide functionalities for validating specific data types and values within predefined sets.
 
 ## is_dict
 
-Valida que el campo sea un diccionario.
+Validates that the field is a dictionary.
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -12,119 +12,175 @@ from pyvalidx.types import is_dict
 
 class ConfigModel(ValidatedModel):
     settings: dict = field_validated(is_dict())
-    metadata: dict = field_validated(is_dict("Metadata must be a dictionary"))
+    metadata: dict = field_validated(is_dict('Metadata must be a dictionary'))
 
-# Uso válido
+# Valid usage
 config = ConfigModel(
-    settings={"debug": True, "port": 8080},
-    metadata={"version": "1.0", "author": "John Doe"}
+    settings={'debug': True, 'port': 8080},
+    metadata={'version': '1.0', 'author': 'John Doe'}
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_config = ConfigModel(settings="not a dict")
+    invalid_config = ConfigModel(settings='not a dict')
 except ValidationException as e:
     print(e.validations)  # {'settings': 'Must be a dictionary'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Must be a dictionary"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must be a dictionary'
 
 ---
 
 ## is_list
 
-Valida que el campo sea una lista.
+Validates that the field is a list.
 
 ```python
 from pyvalidx.types import is_list
 
 class PlaylistModel(ValidatedModel):
     songs: list = field_validated(is_list())
-    genres: list = field_validated(is_list("Genres must be a list"))
+    genres: list = field_validated(is_list('Genres must be a list'))
 
-# Uso válido
+# Valid usage
 playlist = PlaylistModel(
-    songs=["Song 1", "Song 2", "Song 3"],
-    genres=["Rock", "Pop", "Jazz"]
+    songs=['Song 1', 'Song 2', 'Song 3'],
+    genres=['Rock', 'Pop', 'Jazz']
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_playlist = PlaylistModel(songs="not a list")
+    invalid_playlist = PlaylistModel(songs='not a list')
 except ValidationException as e:
     print(e.validations)  # {'songs': 'Must be a list'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Must be a list"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must be a list'
 
 ---
 
 ## is_boolean
 
-Valida que el campo sea un booleano.
+Validates that the field is a boolean.
 
 ```python
 from pyvalidx.types import is_boolean
 
 class SettingsModel(ValidatedModel):
     enabled: bool = field_validated(is_boolean())
-    debug_mode: bool = field_validated(is_boolean("Debug mode must be true or false"))
+    debug_mode: bool = field_validated(is_boolean('Debug mode must be true or false'))
 
-# Uso válido
+# Valid usage
 settings = SettingsModel(
     enabled=True,
     debug_mode=False
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_settings = SettingsModel(enabled="yes")
+    invalid_settings = SettingsModel(enabled='yes')
 except ValidationException as e:
     print(e.validations)  # {'enabled': 'Must be a boolean'}
 ```
 
-### Parámetros
-- `message` (str, opcional): Mensaje de error personalizado. Por defecto: "Must be a boolean"
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must be a boolean'
+
+---
+
+## is_integer
+
+Validates that the field is an integer.
+
+```python
+from pyvalidx.types import is_integer
+
+class CounterModel(ValidatedModel):
+    count: int = field_validated(is_integer())
+    max_items: int = field_validated(is_integer('Max items must be an integer'))
+
+# Valid usage
+counter = CounterModel(
+    count=42,
+    max_items=100
+)
+
+# Invalid usage
+try:
+    invalid_counter = CounterModel(count='not a number')
+except ValidationException as e:
+    print(e.validations)  # {'count': 'Must be an integer'}
+```
+
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must be an integer'
+
+---
+
+## is_float
+
+Validates that the field is a float.
+
+```python
+from pyvalidx.types import is_float
+
+class MeasurementModel(ValidatedModel):
+    temperature: float = field_validated(is_float())
+    pressure: float = field_validated(is_float('Pressure must be a decimal number'))
+
+# Valid usage
+measurement = MeasurementModel(
+    temperature=23.5,
+    pressure=1013.25
+)
+
+# Invalid usage
+try:
+    invalid_measurement = MeasurementModel(temperature='hot')
+except ValidationException as e:
+    print(e.validations)  # {'temperature': 'Must be a float'}
+```
+
+### Parameters
+- `message` (str, optional): Custom error message. Default: 'Must be a float'
 
 ---
 
 ## is_in
 
-Valida que el campo esté dentro de una lista o conjunto de opciones válidas.
+Validates that the field value is within a predefined set of valid values.
 
 ```python
 from pyvalidx.types import is_in
 
 class UserModel(ValidatedModel):
-    role: str = field_validated(is_in(["admin", "user", "guest"]))
+    role: str = field_validated(is_in(['admin', 'user', 'guest']))
     status: str = field_validated(
-        is_in({"active", "inactive", "pending"}, "Status must be active, inactive, or pending")
+        is_in(['active', 'inactive', 'pending'], 'Invalid user status')
     )
-    priority: int = field_validated(is_in([1, 2, 3, 4, 5]))
 
-# Uso válido
+# Valid usage
 user = UserModel(
-    role="admin",
-    status="active",
-    priority=3
+    role='admin',
+    status='active'
 )
 
-# Uso inválido
+# Invalid usage
 try:
-    invalid_user = UserModel(role="invalid_role")
+    invalid_user = UserModel(role='invalid_role')
 except ValidationException as e:
-    print(e.validations)  # {'role': "Must be one of: ['admin', 'user', 'guest']"}
+    print(e.validations)  # {'role': 'Must be one of: ['admin', 'user', 'guest']'}
 ```
 
-### Parámetros
-- `choices` (Union[List[Any], Set[Any]]): Lista o conjunto de valores válidos
-- `message` (str, opcional): Mensaje de error personalizado
+### Parameters
+- `choices` (Union[List[Any], Set[Any]]): List or set of valid values
+- `message` (str, optional): Custom error message
 
 ---
 
-## Ejemplo Completo: Sistema de Configuración
+## Complete Example: Configuration System
 
 ```python
 from pyvalidx import ValidatedModel, field_validated
@@ -133,56 +189,59 @@ from pyvalidx.types import is_dict, is_list, is_boolean, is_in
 from pyvalidx.numeric import is_positive, min_value, max_value
 
 class ApplicationConfigModel(ValidatedModel):
-    app_name: str = field_validated(is_required("Application name is required"))
-    
+    # Basic configuration
+    app_name: str = field_validated(is_required('Application name is required'))
+
+    # Environment validation
     environment: str = field_validated(
-        is_required("Environment is required"),
-        is_in(["development", "staging", "production"], "Invalid environment")
-    )
-    
-    debug: bool = field_validated(
-        is_boolean("Debug must be true or false")
-    )
-    
-    port: int = field_validated(
-        is_positive("Port must be positive"),
-        min_value(1000, "Port must be at least 1000"),
-        max_value(65535, "Port cannot exceed 65535")
-    )
-    
-    allowed_hosts: list = field_validated(
-        is_required("Allowed hosts list is required"),
-        is_list("Allowed hosts must be a list")
-    )
-    
-    database: dict = field_validated(
-        is_required("Database configuration is required"),
-        is_dict("Database configuration must be a dictionary")
-    )
-    
-    log_level: str = field_validated(
-        is_in(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+        is_required('Environment is required'),
+        is_in(['development', 'staging', 'production'], 'Invalid environment')
     )
 
-# Uso válido
+    # Feature flags
+    debug_mode: bool = field_validated(
+        is_required('Debug mode setting is required'),
+        is_boolean('Debug mode must be true or false')
+    )
+
+    # Database configuration
+    database_config: dict = field_validated(
+        is_required('Database configuration is required'),
+        is_dict('Database config must be a dictionary')
+    )
+
+    # Allowed hosts
+    allowed_hosts: list = field_validated(
+        is_required('Allowed hosts are required'),
+        is_list('Allowed hosts must be a list')
+    )
+
+    # Port configuration
+    port: int = field_validated(
+        is_required('Port is required'),
+        is_positive('Port must be positive'),
+        min_value(1024, 'Port must be at least 1024'),
+        max_value(65535, 'Port must be at most 65535')
+    )
+
+# Valid usage
 config = ApplicationConfigModel(
-    app_name="MyApp",
-    environment="production",
-    debug=False,
-    port=8080,
-    allowed_hosts=["localhost", "myapp.com"],
-    database={
-        "host": "localhost",
-        "port": 5432,
-        "name": "myapp_db"
+    app_name='MyWebApp',
+    environment='production',
+    debug_mode=False,
+    database_config={
+        'host': 'localhost',
+        'port': 5432,
+        'name': 'myapp_db'
     },
-    log_level="INFO"
+    allowed_hosts=['example.com', 'www.example.com'],
+    port=8080
 )
 ```
 
 ---
 
-## Ejemplo: Validación de Datos JSON
+## Example: JSON Data Validation
 
 ```python
 from pyvalidx.types import is_dict, is_list
@@ -190,144 +249,85 @@ from pyvalidx.string import is_email
 
 class ApiRequestModel(ValidatedModel):
     user_data: dict = field_validated(
-        is_required("User data is required"),
-        is_dict("User data must be a valid JSON object")
-    )
-    
-    tags: list = field_validated(
-        is_list("Tags must be an array")
-    )
-    
-    action: str = field_validated(
-        is_required("Action is required"),
-        is_in(["create", "update", "delete"], "Invalid action type")
+        is_required('User data is required'),
+        is_dict('User data must be a valid JSON object')
     )
 
-# Uso válido
+    tags: list = field_validated(
+        is_list('Tags must be an array')
+    )
+
+    action: str = field_validated(
+        is_required('Action is required'),
+        is_in(['create', 'update', 'delete'], 'Invalid action type')
+    )
+
+# Valid usage
 api_request = ApiRequestModel(
     user_data={
-        "name": "John Doe",
-        "email": "john@example.com",
-        "age": 30
+        'name': 'John Doe',
+        'email': 'john@example.com',
+        'age': 30
     },
-    tags=["important", "user", "profile"],
-    action="create"
+    tags=['important', 'user', 'profile'],
+    action='create'
 )
+
+# Invalid usage
+try:
+    invalid_request = ApiRequestModel(
+        user_data='not a dict',
+        tags='not a list',
+        action='invalid_action'
+    )
+except ValidationException as e:
+    print(e.validations)
+    # Multiple validation errors will be shown
 ```
 
 ---
 
-## Ejemplo: Sistema de Roles y Permisos
+## Example: Game Configuration
 
 ```python
-class UserPermissionModel(ValidatedModel):
-    user_id: int = field_validated(is_required(), is_positive())
-    
-    role: str = field_validated(
-        is_required("Role is required"),
-        is_in(["admin", "moderator", "editor", "viewer"], "Invalid role")
-    )
-    
-    permissions: list = field_validated(
-        is_required("Permissions list is required"),
-        is_list("Permissions must be a list")
-    )
-    
-    is_active: bool = field_validated(
-        is_boolean("Active status must be true or false")
-    )
-    
-    settings: dict = field_validated(
-        is_dict("Settings must be a dictionary")
+from pyvalidx.types import is_in, is_boolean, is_integer
+
+class GameSettingsModel(ValidatedModel):
+    difficulty: str = field_validated(
+        is_required('Difficulty is required'),
+        is_in(['easy', 'medium', 'hard', 'expert'], 'Invalid difficulty level')
     )
 
-# Definir permisos válidos
-VALID_PERMISSIONS = {
-    "read", "write", "delete", "admin", "moderate", "publish"
-}
-
-# Validación personalizada para permisos
-def validate_permissions(permissions_list, context=None):
-    if not isinstance(permissions_list, list):
-        return False
-    return all(perm in VALID_PERMISSIONS for perm in permissions_list)
-
-class EnhancedUserPermissionModel(ValidatedModel):
-    user_id: int = field_validated(is_required(), is_positive())
-    
-    role: str = field_validated(
-        is_required("Role is required"),
-        is_in(["admin", "moderator", "editor", "viewer"])
+    sound_enabled: bool = field_validated(
+        is_boolean('Sound setting must be true or false')
     )
-    
-    permissions: list = field_validated(
-        is_required("Permissions list is required"),
-        is_list("Permissions must be a list"),
-        custom(validate_permissions, "Invalid permissions in list")
-    )
-    
-    is_active: bool = field_validated(is_boolean())
-    
-    settings: dict = field_validated(is_dict())
 
-# Uso
-user_permission = EnhancedUserPermissionModel(
-    user_id=123,
-    role="editor",
-    permissions=["read", "write", "publish"],
-    is_active=True,
-    settings={"theme": "dark", "notifications": True}
+    max_players: int = field_validated(
+        is_required('Max players is required'),
+        is_integer('Max players must be a number'),
+        is_in([2, 4, 6, 8], 'Max players must be 2, 4, 6, or 8')
+    )
+
+    game_modes: list = field_validated(
+        is_required('Game modes are required'),
+        is_list('Game modes must be a list')
+    )
+
+# Usage
+game_settings = GameSettingsModel(
+    difficulty='medium',
+    sound_enabled=True,
+    max_players=4,
+    game_modes=['classic', 'tournament', 'practice']
 )
 ```
 
 ---
 
-## Combinando Validadores de Tipo
+## Important Notes
 
-```python
-class ComplexDataModel(ValidatedModel):
-    # Lista que debe contener solo strings válidos
-    categories: list = field_validated(
-        is_required("Categories are required"),
-        is_list("Categories must be a list"),
-        is_not_empty("Categories list cannot be empty")
-    )
-    
-    # Diccionario con configuración específica
-    config: dict = field_validated(
-        is_required("Configuration is required"),
-        is_dict("Configuration must be a dictionary"),
-        is_not_empty("Configuration cannot be empty")
-    )
-    
-    # Estado que debe ser uno de los valores específicos
-    status: str = field_validated(
-        is_required("Status is required"),
-        is_in(["draft", "published", "archived", "deleted"])
-    )
-    
-    # Flag booleano con valor por defecto
-    featured: bool = field_validated(is_boolean())
-
-# Uso
-data = ComplexDataModel(
-    categories=["technology", "programming", "python"],
-    config={
-        "auto_save": True,
-        "max_retries": 3,
-        "timeout": 30
-    },
-    status="published",
-    featured=True
-)
-```
-
----
-
-## Notas Importantes
-
-- Los validadores de tipo verifican el tipo exacto usando `isinstance()`
-- `is_in` funciona con cualquier tipo de dato que soporte el operador `in`
-- Los validadores retornan `True` si el valor es `None` (para campos opcionales)
-- Para listas y diccionarios vacíos, considera usar también `is_not_empty()` si es necesario
-- `is_in` es especialmente útil para validar enums o conjuntos predefinidos de valores
+- Type validators return `True` if the value is `None` (for optional fields)
+- `is_in` validator performs case-sensitive comparison
+- For `is_in`, you can use both lists and sets for better performance with large choice sets
+- Type validators can be combined with other validators for comprehensive validation
+- When using `is_in` with numbers, ensure the choices match the expected data type
