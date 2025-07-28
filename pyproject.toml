@@ -21,7 +21,6 @@ keywords = ["validation", "pydantic", "forms", "data-validation", "python"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -43,9 +42,6 @@ Homepage = "https://github.com/harrison-gaviria/pyvalidx"
 Documentation = "https://harrison-gaviria.github.io/pyvalidx/"
 Repository = "https://github.com/harrison-gaviria/pyvalidx"
 "Bug Tracker" = "https://github.com/harrison-gaviria/pyvalidx/issues"
-Changelog = "https://github.com/harrison-gaviria/pyvalidx/blob/main/CHANGELOG.md"
-Funding = "https://github.com/sponsors/harrison-gaviria"
-Source = "https://github.com/harrison-gaviria/pyvalidx"
 
 [tool.setuptools.packages.find]
 where = ["src"]
