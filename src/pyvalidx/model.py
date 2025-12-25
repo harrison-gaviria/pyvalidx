@@ -45,9 +45,16 @@ class ValidatedModel(BaseModel):
         for field_name, field_info in model_fields.items():
             field_value = values.get(field_name)
             field_errors: List[str] = []
-            extra = field_info.json_schema_extra or {}
-
-            custom_validators: List[Callable[[Any, Optional[Dict[str, Any]]], bool]] = extra.get("custom_validators", [])  # type: ignore
+            custom_validators: List[Callable[[Any, Optional[Dict[str, Any]]], bool]] = []
+            if hasattr(field_info, 'metadata') and field_info.metadata:
+                for meta_item in field_info.metadata:
+                    if isinstance(meta_item, dict) and "custom_validators" in meta_item:
+                        custom_validators = meta_item["custom_validators"]
+                        break
+            if not custom_validators:
+                extra = field_info.json_schema_extra or {}
+                if isinstance(extra, dict):
+                    custom_validators = extra.get("custom_validators", [])  # type: ignore
 
             for validator_func in custom_validators:
                 if not hasattr(validator_func, '__message__'):

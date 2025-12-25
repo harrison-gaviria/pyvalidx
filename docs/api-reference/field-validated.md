@@ -35,7 +35,7 @@ def field_validated(
 
 ## Returns
 
-Returns a Pydantic `Field` instance with custom validators attached through the `json_schema_extra` metadata.
+Returns a Pydantic `Field` instance with custom validators attached through the metadata.
 
 ## Usage Examples
 

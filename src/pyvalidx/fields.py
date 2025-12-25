@@ -20,7 +20,9 @@ def field_validated(
     Returns:
         Any: A Pydantic field with the custom validators.
     '''
-    metadata = {"custom_validators": validators}
-    extra = kwargs.pop("json_schema_extra", {})
-    extra.update(metadata)
-    return Field(json_schema_extra=extra, **kwargs)
+    field_obj = Field(**kwargs)
+    if not hasattr(field_obj, 'metadata'):
+        field_obj.metadata = []
+
+    field_obj.metadata.append({"custom_validators": validators})
+    return field_obj
