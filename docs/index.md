@@ -99,7 +99,7 @@ async def create_user(payload: CreateUserDto):
   "error": "Validation failed",
   "details": {
     "email": ["Invalid email format"],
-    "password": ["Password must contain at least one uppercase letter"]
+    "password": ["Password must be strong"]
   }
 }
 ```
