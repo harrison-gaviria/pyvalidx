@@ -59,6 +59,51 @@ Or with poetry:
 poetry add pyvalidx
 ```
 
+## 🔌 FastAPI Integration
+
+PyValidX works seamlessly with FastAPI for robust API validation:
+
+```python
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from pyvalidx import ValidatedModel, ValidationException, field_validated
+from pyvalidx.core import is_required
+from pyvalidx.string import is_email, is_strong_password
+
+app = FastAPI()
+
+# Configure global exception handler
+@app.exception_handler(ValidationException)
+async def validation_exception_handler(request, exc: ValidationException):
+    return JSONResponse(
+        status_code=400,
+        content={"error": "Validation failed", "details": exc.to_dict()}
+    )
+
+# Define your DTO
+class CreateUserDto(ValidatedModel):
+    username: str = field_validated(is_required())
+    email: str = field_validated(is_required(), is_email())
+    password: str = field_validated(is_required(), is_strong_password())
+
+# Use it in your endpoint
+@app.post("/users")
+async def create_user(payload: CreateUserDto):
+    # Validation happens automatically!
+    return {"message": "User created", "username": payload.username}
+```
+
+**Error Response Example:**
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "email": ["Invalid email format"],
+    "password": ["Password must be strong"]
+  }
+}
+```
+
 ## 🎯 Core Concepts
 
 ### Validators
